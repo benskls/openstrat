@@ -1,5 +1,9 @@
 # OpenStrat
 
+<p align="center">
+  <img src="logo.png" alt="OpenStrat Logo" width="120" height="120">
+</p>
+
 > **Dashboard de gestion d'agents et de skills pour projets IA avec OpenCode.**
 
 OpenStrat est un outil de visualisation et de gestion pour structurer vos projets side-project avec OpenCode. Il vous permet de cartographier vos agents, vos skills, votre vision stratégique (Picture) et votre avancement (Progress) dans une interface web simple et élégante.
