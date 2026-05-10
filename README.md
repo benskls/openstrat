@@ -1,7 +1,7 @@
 # OpenStrat
 
 <p align="center">
-  <img src="logo.png" alt="OpenStrat Logo" width="120" height="120">
+  <img src="wordmark.png" alt="OpenStrat" width="600">
 </p>
 
 > **Dashboard de gestion d'agents et de skills pour projets IA avec OpenCode.**
