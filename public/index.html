@@ -34,6 +34,18 @@
     .markdown-body blockquote { border-left: 3px solid #6366f1; padding-left: 1rem; margin: 0.75rem 0; color: #71717a; font-style: italic; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
     .fade-in { animation: fadeIn 0.3s ease-out; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,255,255,0.15);
+      border-top-color: #a1a1aa;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    .hidden { display: none !important; }
     .logo-os { filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.3)); }
     select { background-image: none; }
     .project-select:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2); }
@@ -95,6 +107,19 @@
         Roadmap
       </button>
     </nav>
+
+    <!-- Root Folder -->
+    <div class="px-4 py-3 border-b border-zinc-800">
+      <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">Dossier racine</label>
+      <div id="root-folder-display" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-300 truncate mb-2" title="">/</div>
+      <div class="flex gap-2">
+        <button onclick="openConfigModal()" class="flex-1 px-3 py-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded border border-zinc-700 transition">Configurer</button>
+        <button id="refresh-btn" onclick="refreshProjects()" class="px-3 py-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded border border-zinc-700 transition flex items-center justify-center" title="Rescanner le dossier" style="min-width: 36px;">
+          <svg id="refresh-icon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          <div id="refresh-spinner" class="spinner hidden"></div>
+        </button>
+      </div>
+    </div>
 
     <div class="p-3 border-t border-zinc-800">
       <div class="flex items-center gap-2 text-[10px] text-zinc-600">
@@ -255,7 +280,7 @@
         select.innerHTML = '';
         
         if (projects.length === 0) {
-          select.innerHTML = '<option value="" disabled>Aucun projet trouvé</option>';
+          select.innerHTML = '<option value="" disabled>Aucun projet — configurez le dossier racine</option>';
           setStatus('No projects found', 'yellow');
           return;
         }
@@ -270,7 +295,7 @@
         projects.forEach(p => {
           const opt = document.createElement('option');
           opt.value = p.id;
-          opt.textContent = p.name + (p.isOpencode ? ' ●' : '');
+          opt.textContent = p.name;
           select.appendChild(opt);
         });
         
@@ -278,17 +303,23 @@
         if (currentProject && projects.find(p => p.id === currentProject)) {
           select.value = currentProject;
           loadProjectData();
+          loadAgents();
+          loadSkills();
         } else if (projects.length > 0) {
           // Auto-select first
           currentProject = projects[0].id;
           select.value = currentProject;
           localStorage.setItem('openstrat-project', currentProject);
           loadProjectData();
+          loadAgents();
+          loadSkills();
         }
         
         setStatus('Ready', 'green');
+        return;
       } catch (err) {
         setStatus('Error loading projects', 'red');
+        throw err;
       }
     }
 
@@ -299,24 +330,137 @@
       currentAgent = null;
       currentSkill = null;
       loadProjectData();
+      // Refresh sidebar counters regardless of active view
+      loadAgents();
+      loadSkills();
+    }
+
+    async function loadConfig() {
+      try {
+        const res = await fetch('/api/config');
+        const config = await res.json();
+        const display = document.getElementById('root-folder-display');
+        if (config && config.parentDir) {
+          display.textContent = config.parentDir;
+          display.title = config.parentDir;
+        } else {
+          display.textContent = '/';
+          display.title = 'Non configuré';
+        }
+      } catch (err) {
+        document.getElementById('root-folder-display').textContent = 'Erreur de chargement';
+      }
+    }
+
+    async function refreshProjects() {
+      const icon = document.getElementById('refresh-icon');
+      const spinner = document.getElementById('refresh-spinner');
+      
+      icon.classList.add('hidden');
+      spinner.classList.remove('hidden');
+      
+      const startTime = Date.now();
+      const oldCount = projects.length;
+      const oldIds = new Set(projects.map(p => p.id));
+      
+      try {
+        await loadProjects();
+        
+        const newCount = projects.length;
+        const newIds = new Set(projects.map(p => p.id));
+        
+        if (newCount > oldCount) {
+          const added = [...newIds].filter(id => !oldIds.has(id));
+          showToast(`${added.length} nouveau(x) projet(s)`);
+        } else if (newCount < oldCount) {
+          showToast(`${oldCount - newCount} projet(s) retiré(s)`);
+        } else {
+          showToast('À jour');
+        }
+      } catch (err) {
+        showToast('Erreur lors du scan');
+      } finally {
+        const elapsed = Date.now() - startTime;
+        const minDelay = 600;
+        const remaining = Math.max(0, minDelay - elapsed);
+        
+        setTimeout(() => {
+          spinner.classList.add('hidden');
+          icon.classList.remove('hidden');
+        }, remaining);
+      }
+    }
+
+    function openConfigModal() {
+      const current = document.getElementById('root-folder-display').textContent;
+      document.getElementById('config-folder-input').value = current === '/' || current === 'Erreur de chargement' ? '' : current;
+      document.getElementById('config-error').classList.add('hidden');
+      const modal = document.getElementById('config-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      document.getElementById('config-folder-input').focus();
+    }
+
+    function closeConfigModal() {
+      const modal = document.getElementById('config-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    async function saveConfig() {
+      const input = document.getElementById('config-folder-input');
+      const errorDiv = document.getElementById('config-error');
+      const parentDir = input.value.trim();
+      
+      if (!parentDir) {
+        errorDiv.textContent = 'Veuillez entrer un chemin valide.';
+        errorDiv.classList.remove('hidden');
+        return;
+      }
+      
+      try {
+        const res = await fetch('/api/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ parentDir })
+        });
+        const data = await res.json();
+        if (!res.ok || data.error) {
+          throw new Error(data.error || 'Erreur lors de la sauvegarde');
+        }
+        closeConfigModal();
+        loadConfig();
+        loadProjects();
+        showToast('Dossier racine mis à jour');
+      } catch (err) {
+        errorDiv.textContent = err.message;
+        errorDiv.classList.remove('hidden');
+      }
     }
 
     function loadProjectData() {
       if (!currentProject) return;
-      
-      // Update labels
-      const projectName = projects.find(p => p.id === currentProject)?.name || currentProject;
+      const project = projects.find(p => p.id === currentProject);
+      const projectName = project?.name || currentProject;
       document.getElementById('agents-project-label').textContent = projectName;
       document.getElementById('skills-project-label').textContent = projectName;
       document.getElementById('picture-project-label').textContent = projectName;
       document.getElementById('progress-project-label').textContent = projectName;
-      
-      // Load based on current view
+
       if (currentView === 'agents') { loadAgents(); }
       else if (currentView === 'skills') { loadSkills(); }
-      else if (currentView === 'picture') { loadPicture(); }
-      else if (currentView === 'progress') { loadProgress(); }
-      else if (currentView === 'roadmap') { renderRoadmap(); }
+      else if (currentView === 'picture') {
+        if (project?.hasPicture) loadPicture();
+        else showPictureEmptyState();
+      }
+      else if (currentView === 'progress') {
+        if (project?.hasProgress) loadProgress();
+        else showProgressEmptyState();
+      }
+      else if (currentView === 'roadmap') {
+        if (project?.hasRoadmap) renderRoadmap();
+        else showRoadmapEmptyState();
+      }
     }
 
     // ─── Navigation ──────────────────────────────────────────────────
@@ -329,11 +473,7 @@
       document.getElementById('nav-' + view).classList.add('active');
       
       if (currentProject) {
-        if (view === 'agents') loadAgents();
-        if (view === 'skills') loadSkills();
-        if (view === 'picture') loadPicture();
-        if (view === 'progress') loadProgress();
-        if (view === 'roadmap') renderRoadmap();
+        loadProjectData();
       }
     }
 
@@ -359,8 +499,8 @@
             <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-zinc-800 flex items-center justify-center">
               <svg class="w-6 h-6 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
             </div>
-            <p class="text-xs text-zinc-500">No agents found</p>
-            <p class="text-[10px] text-zinc-600 mt-1">Create .opencode/agents/&lt;name&gt;.md</p>
+            <p class="text-xs text-zinc-500 mb-3">Aucun agent trouvé</p>
+            <button onclick="generateFile('main-agent')" class="px-3 py-1.5 text-xs bg-indigo-600 hover:bg-indigo-500 rounded text-white font-medium transition">Créer l'agent principal</button>
           </div>
         `;
         return;
@@ -452,8 +592,8 @@
             <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-zinc-800 flex items-center justify-center">
               <svg class="w-6 h-6 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
             </div>
-            <p class="text-xs text-zinc-500">No skills found</p>
-            <p class="text-[10px] text-zinc-600 mt-1">Create .opencode/skills/&lt;name&gt;/SKILL.md</p>
+            <p class="text-xs text-zinc-500 mb-3">Aucun skill trouvé</p>
+            <button onclick="generateFile('session-start'); generateFile('session-end');" class="px-3 py-1.5 text-xs bg-indigo-600 hover:bg-indigo-500 rounded text-white font-medium transition">Créer les skills de session</button>
           </div>
         `;
         return;
@@ -499,6 +639,77 @@
       } catch (err) {
         alert('Save failed: ' + err.message);
       }
+    }
+
+    async function generateFile(fileType) {
+      if (!currentProject) return;
+      try {
+        const res = await fetch('/api/generate-file', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ projectId: currentProject, fileType })
+        });
+        const data = await res.json();
+        if (!res.ok || data.error) {
+          throw new Error(data.error || 'Erreur lors de la génération');
+        }
+        showToast('Fichier généré');
+        // Refresh project list to update hasPicture/hasProgress/hasRoadmap flags
+        await loadProjects();
+        // Reload current view
+        if (currentView === 'agents') loadAgents();
+        if (currentView === 'skills') loadSkills();
+        if (currentView === 'picture') loadPicture();
+        if (currentView === 'progress') loadProgress();
+        if (currentView === 'roadmap') renderRoadmap();
+      } catch (err) {
+        alert('Erreur : ' + err.message);
+      }
+    }
+
+    function showPictureEmptyState() {
+      document.getElementById('picture-content').innerHTML = `
+        <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-8 text-center">
+          <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-indigo-500/10 flex items-center justify-center">
+            <svg class="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0121 18.382V7.618a1 1 0 01-.553-.894L15 7m0 13V7"/></svg>
+          </div>
+          <h3 class="text-white font-semibold text-lg mb-2">Pas encore de Picture</h3>
+          <p class="text-zinc-500 text-sm max-w-md mx-auto mb-4">
+            La Picture est le document de vision stratégique de ton projet. Elle définit la cible, les phases, les jalons et les décisions figées.
+          </p>
+          <button onclick="generateFile('picture')" class="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-500 rounded text-white font-medium transition">Créer la Picture</button>
+        </div>
+      `;
+    }
+
+    function showProgressEmptyState() {
+      document.getElementById('progress-content').innerHTML = `
+        <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-8 text-center">
+          <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-indigo-500/10 flex items-center justify-center">
+            <svg class="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+          </div>
+          <h3 class="text-white font-semibold text-lg mb-2">Pas encore de Progress</h3>
+          <p class="text-zinc-500 text-sm max-w-md mx-auto mb-4">
+            Le Progress est la photo de l'état actuel de ton projet : chantiers terminés, en cours, backlog, risques et métriques.
+          </p>
+          <button onclick="generateFile('progress')" class="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-500 rounded text-white font-medium transition">Créer le Progress</button>
+        </div>
+      `;
+    }
+
+    function showRoadmapEmptyState() {
+      document.getElementById('roadmap-matrix').innerHTML = `
+        <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-8 text-center">
+          <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-indigo-500/10 flex items-center justify-center">
+            <svg class="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+          </div>
+          <h3 class="text-white font-semibold text-lg mb-2">Pas encore de Roadmap</h3>
+          <p class="text-zinc-500 text-sm max-w-md mx-auto mb-4">
+            La Roadmap relie ta vision (Picture) à la réalité (Progress) en trajectoire claire avec jalons et principes de priorisation.
+          </p>
+          <button onclick="generateFile('roadmap')" class="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-500 rounded text-white font-medium transition">Créer la Roadmap</button>
+        </div>
+      `;
     }
 
     // ─── Picture ─────────────────────────────────────────────────────
@@ -564,7 +775,7 @@
 
     function showToast(msg) {
       const toast = document.createElement('div');
-      toast.className = 'fixed bottom-4 right-4 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm shadow-lg z-50 fade-in';
+      toast.className = 'fixed bottom-4 right-4 bg-zinc-700 text-zinc-200 px-4 py-2 rounded-lg text-sm shadow-lg z-50 fade-in';
       toast.textContent = msg;
       document.body.appendChild(toast);
       setTimeout(() => toast.remove(), 2000);
@@ -573,6 +784,9 @@
     // ─── Keyboard shortcuts ──────────────────────────────────────────
 
     document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        closeConfigModal();
+      }
       if ((e.metaKey || e.ctrlKey) && e.key === 's') {
         e.preventDefault();
         if (currentView === 'agents') saveAgent();
@@ -585,7 +799,24 @@
 
     // ─── Init ────────────────────────────────────────────────────────
 
+    loadConfig();
     loadProjects();
   </script>
+
+  <!-- Config Modal -->
+  <div id="config-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm" onclick="if(event.target===this)closeConfigModal()">
+    <div class="bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl w-full max-w-md mx-4 p-6 fade-in">
+      <h3 class="text-lg font-semibold text-white mb-4">Configurer le dossier racine</h3>
+      <div class="mb-4">
+        <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">Chemin absolu</label>
+        <input type="text" id="config-folder-input" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition" placeholder="/chemin/vers/dossier/parent">
+      </div>
+      <div id="config-error" class="mb-4 text-xs text-red-400 hidden"></div>
+      <div class="flex justify-end gap-2">
+        <button onclick="closeConfigModal()" class="px-3 py-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded border border-zinc-700 transition">Annuler</button>
+        <button onclick="saveConfig()" class="px-3 py-1.5 text-xs bg-indigo-600 hover:bg-indigo-500 text-white rounded font-medium transition">Scanner et appliquer</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

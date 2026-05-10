@@ -4,36 +4,31 @@
   <img src="wordmark.png" alt="OpenStrat" width="600">
 </p>
 
-> **Dashboard de gestion d'agents et de skills pour projets IA avec OpenCode.**
+> Dashboard de gestion d'agents et de skills pour projets IA avec OpenCode.
 
-OpenStrat est un outil de visualisation et de gestion pour structurer vos projets side-project avec OpenCode. Il vous permet de cartographier vos agents, vos skills, votre vision stratégique (Picture) et votre avancement (Progress) dans une interface web simple et élégante.
-
-## 🚀 Quick Start
+## 🚀 Installation rapide (première fois)
 
 ```bash
-# Cloner le repo
-git clone <repo-url> openstrat
-cd openstrat
-
-# Installer les dépendances
-npm install
-
-# Lancer le dashboard
-npm start
+curl -fsSL https://raw.githubusercontent.com/benskls/openstrat/main/install.sh | bash
 ```
 
-Ouvrez [http://localhost:3456](http://localhost:3456) dans votre navigateur.
+Le script va :
+1. Vérifier Node.js
+2. Demander où placer vos projets
+3. Installer OpenStrat
+4. Créer un alias `openstrat` dans votre shell
+5. Lancer le dashboard sur http://localhost:3456
 
-## 📁 Structure projet
+## 📂 Structure recommandée
 
 ```
-openstrat/
-├── public/
-│   └── index.html          # Dashboard UI (single file)
-├── server.js               # Express API + static serve
-├── package.json
-├── README.md
-└── .gitignore
+~/projets/                    ← dossier racine (configurable)
+├── openstrat/                ← ce dashboard
+│   ├── server.js
+│   └── public/
+├── altuas/                   ← vos projets OpenCode
+├── mon-projet/
+└── autre-projet/
 ```
 
 ## 🎯 Fonctionnalités
@@ -45,27 +40,97 @@ openstrat/
 | **Picture** | Visualisation stratégique (phases, jalons, trajectoire) |
 | **Progress** | Suivi des tâches et recommandations |
 | **Roadmap** | Matrix Picture × Progress pour voir l'alignement stratégique |
+| **Multi-projets** | Switch rapide entre projets via le sélecteur |
+| **Dossier racine configurable** | Choisissez où scanner vos projets |
+| **Génération automatique de templates** | Créez agents, skills, picture, progress, roadmap en un clic |
+| **Empty states avec CTA** | Interface guidée quand un projet est vide |
+| **Compteurs temps réel** | Nombre d'agents, skills et fichiers détectés |
+| **Refresh du dossier racine** | Rescan à la volée pour détecter les nouveaux projets |
 
-## 🛠 Stack
+## 🛠 Utilisation
 
-- **Backend** : Express.js
-- **Frontend** : Vanilla HTML/CSS/JS + Tailwind CDN
+### Lancer le dashboard
+
+```bash
+openstrat    # alias créé par install.sh
+```
+
+Ou manuellement :
+
+```bash
+cd /chemin/vers/openstrat
+npm start
+```
+
+### Créer un nouveau projet
+
+1. Créez un dossier vide dans votre dossier racine :
+   ```bash
+   mkdir ~/projets/mon-projet
+   ```
+2. Ouvrez http://localhost:3456
+3. Cliquez sur 🔄 pour scanner
+4. Sélectionnez `mon-projet`
+5. Générez vos fichiers dans chaque onglet :
+   - **Agents** → "Créer l'agent principal"
+   - **Skills** → "Créer les skills de session"
+   - **Picture** → "Créer la Picture"
+   - **Progress** → "Créer le Progress"
+   - **Roadmap** → "Créer la Roadmap"
+
+### Configurer le dossier racine
+
+Dans le sidebar, section "Dossier racine" :
+- 🔄 **Refresh** : rescanner le dossier (détecte nouveaux projets)
+- **Configurer** : changer le chemin absolu du dossier scanné
+
+### Éditer des fichiers
+
+- Cliquez sur un agent/skill pour l'ouvrir dans l'éditeur
+- Modifiez le markdown
+- Sauvegardez avec `Cmd+S` ou le bouton Save
+
+## 📁 Stack
+
+- **Backend** : Express.js, détection multi-projets
+- **Frontend** : Vanilla HTML/CSS/JS, Tailwind CDN
 - **Parsing** : Marked.js pour le rendu Markdown
 
-## 📝 Usage
+## 📝 Templates générés
 
-1. Placez votre projet OpenCode à côté du dossier `openstrat/` (même parent)
-2. Le dashboard détecte automatiquement votre `.opencode/` et `progress.md`
-3. Éditez agents et skills directement dans l'interface
-4. Sauvegardez avec `Cmd+S` ou le bouton Save
+Pour chaque projet, OpenStrat peut générer :
 
-## 🏗 Créé pour l'atelier IA
+| Fichier | Emplacement | Rôle |
+|---------|-------------|------|
+| `{projet}-main.md` | `.opencode/agents/` | Agent principal orchestrateur |
+| `{projet}-session-start/SKILL.md` | `.opencode/skills/` | Skill de démarrage de session |
+| `{projet}-session-end/SKILL.md` | `.opencode/skills/` | Skill de clôture de session |
+| `PICTURE.md` | `docs/` | Vision stratégique |
+| `progress.md` | racine | Suivi d'exécution |
+| `roadmap.md` | racine | Trajectoire & jalons |
 
-OpenStrat a été conçu comme outil pédagogique pour accompagner la méthodologie :
-- Setup OpenCode
-- Création d'agents (main + subagents)
-- Skills de session (start/end)
-- Picture & Progress structurés
+### Skills de session
+
+Les skills **session-start** et **session-end** sont générés automatiquement pour structurer le rythme de travail sur chaque projet :
+
+- **session-start** : brief d'ouverture — contexte, objectifs de la session, fichiers à consulter
+- **session-end** : clôture et récap — ce qui a été fait, prochaines étapes, points de vigilance
+
+## 🔧 Commandes utiles
+
+```bash
+openstrat                    # Lancer le dashboard
+lsof -ti:3456 | xargs kill   # Arrêter le serveur
+cat /tmp/openstrat.log       # Voir les logs
+```
+
+## 🏗 Architecture agents/skills
+
+Les agents et skills sont **préfixés par le nom du projet** pour éviter les collisions entre projets :
+- `altuas-main.md` (visible uniquement depuis altuas)
+- `mon-projet-main.md` (visible uniquement depuis mon-projet)
+
+**Important** : OpenCode Desktop fusionne les configs globales et par projet. Pour isoler les agents, ne placez pas vos agents dans `~/.config/opencode/agents/` (global) — laissez-les dans le dossier `.opencode/agents/` de chaque projet.
 
 ---
 

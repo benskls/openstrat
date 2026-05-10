@@ -5,6 +5,11 @@
 
 set -e
 
+# Helper pour lire depuis le TTY (robustesse curl | bash)
+read_tty() {
+    read -rp "$@" < /dev/tty 2>/dev/null || true
+}
+
 echo ""
 echo "╔══════════════════════════════════════════════════════════╗"
 echo "║                                                          ║"
@@ -13,7 +18,9 @@ echo "║                                                          ║"
 echo "╚══════════════════════════════════════════════════════════╝"
 echo ""
 
-# Vérifier Node.js
+# ─────────────────────────────────────────────────────────────
+# 1. Vérifier Node.js
+# ─────────────────────────────────────────────────────────────
 if ! command -v node &> /dev/null; then
     echo "❌ Node.js n'est pas installé."
     echo "   Téléchargez-le sur : https://nodejs.org/ (version LTS recommandée)"
@@ -23,7 +30,7 @@ fi
 NODE_VERSION=$(node --version | cut -d'v' -f2 | cut -d'.' -f1)
 if [ "$NODE_VERSION" -lt 18 ]; then
     echo "⚠️  Node.js version >= 18 recommandée. Vous avez : $(node --version)"
-    read -p "Continuer quand même ? (y/N) " -n 1 -r
+    read_tty "Continuer quand même ? (y/N) " -n 1 -r
     echo
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
         exit 1
@@ -33,49 +40,150 @@ fi
 echo "✅ Node.js détecté : $(node --version)"
 echo ""
 
-# Cloner le repo
-REPO_URL="https://github.com/benskls/openstrat.git"
-INSTALL_DIR="openstrat"
-
-if [ -d "$INSTALL_DIR" ]; then
-    echo "⚠️  Le dossier 'openstrat' existe déjà."
-    read -p "Le supprimer et recommencer ? (y/N) " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        rm -rf "$INSTALL_DIR"
-    else
-        echo "Abandon."
-        exit 0
-    fi
+# ─────────────────────────────────────────────────────────────
+# 2. Détecter le dossier parent
+# ─────────────────────────────────────────────────────────────
+if [ -f "server.js" ]; then
+    DEFAULT_PARENT_DIR=$(dirname "$PWD")
+else
+    DEFAULT_PARENT_DIR="$PWD"
 fi
 
-echo "📥 Clonage de OpenStrat..."
-git clone "$REPO_URL" "$INSTALL_DIR"
+echo ""
+echo "📁 Où voulez-vous placer votre dossier de projets ?"
+echo "   [défaut: $DEFAULT_PARENT_DIR]"
+read_tty "" PARENT_DIR
+PARENT_DIR=${PARENT_DIR:-$DEFAULT_PARENT_DIR}
+
+if [ ! -d "$PARENT_DIR" ]; then
+    echo "📁 Création du dossier $PARENT_DIR..."
+    mkdir -p "$PARENT_DIR"
+fi
+# Normaliser en chemin absolu
+PARENT_DIR=$(cd "$PARENT_DIR" && pwd)
+
+echo "📁 Dossier de projets configuré : $PARENT_DIR"
+echo ""
+
+# ─────────────────────────────────────────────────────────────
+# 3. Installer OpenStrat
+# ─────────────────────────────────────────────────────────────
+if [ -f "server.js" ]; then
+    echo "📂 Mode local détecté (vous êtes déjà dans le repo openstrat)"
+    INSTALL_DIR="$PWD"
+    IS_LOCAL=true
+else
+    IS_LOCAL=false
+    REPO_URL="https://github.com/benskls/openstrat.git"
+    INSTALL_DIR="openstrat"
+    
+    if [ -d "$INSTALL_DIR" ]; then
+        echo ""
+        echo "⚠️  Le dossier 'openstrat' existe déjà."
+        echo "   Le supprimer et recommencer ? (y/N)"
+        read_tty "" -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            rm -rf "$INSTALL_DIR"
+        else
+            echo "Abandon."
+            exit 0
+        fi
+    fi
+    
+    echo "📥 Clonage de OpenStrat..."
+    git clone "$REPO_URL" "$INSTALL_DIR"
+fi
+
+# Normaliser le chemin d'installation en absolu
+INSTALL_DIR=$(cd "$INSTALL_DIR" && pwd)
+
 cd "$INSTALL_DIR"
 
 echo ""
 echo "📦 Installation des dépendances..."
 npm install
 
+# ─────────────────────────────────────────────────────────────
+# 4. Créer le fichier config.json
+# ─────────────────────────────────────────────────────────────
+echo ""
+echo "⚙️  Création de la configuration..."
+cat > "$INSTALL_DIR/config.json" <<EOF
+{
+  "parentDir": "$PARENT_DIR"
+}
+EOF
+echo "✅ config.json créé avec parentDir : $PARENT_DIR"
+
+# ─────────────────────────────────────────────────────────────
+# 5. Créer l'alias shell
+# ─────────────────────────────────────────────────────────────
+echo ""
+echo "🔧 Configuration de l'alias shell..."
+
+SHELL_RC="$HOME/.bashrc"
+if [[ "$SHELL" == *"zsh"* ]]; then
+    SHELL_RC="$HOME/.zshrc"
+fi
+
+ALIAS_LINE="alias openstrat='cd $INSTALL_DIR && npm start'"
+
+if [ -f "$SHELL_RC" ] && grep -qF "$ALIAS_LINE" "$SHELL_RC"; then
+    echo "ℹ️  Alias déjà présent dans $SHELL_RC"
+else
+    {
+        echo ""
+        echo "# OpenStrat Dashboard"
+        echo "$ALIAS_LINE"
+    } >> "$SHELL_RC"
+    echo "✅ Alias ajouté dans $SHELL_RC"
+    echo "   Pour l'utiliser immédiatement, exécutez : source $SHELL_RC"
+fi
+
+# ─────────────────────────────────────────────────────────────
+# 6. Proposer de lancer immédiatement
+# ─────────────────────────────────────────────────────────────
+echo ""
+echo "🚀 Lancer le dashboard maintenant ? (Y/n)"
+read_tty "" -n 1 -r
+echo
+if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+    echo ""
+    echo "🚀 Démarrage d'OpenStrat..."
+    echo "   http://localhost:3456"
+    echo "   (Ctrl+C pour arrêter)"
+    echo ""
+    npm start
+else
+    echo ""
+    echo "💡 Pour lancer plus tard : openstrat"
+fi
+
+# ─────────────────────────────────────────────────────────────
+# 7. Instructions finales
+# ─────────────────────────────────────────────────────────────
 echo ""
 echo "╔══════════════════════════════════════════════════════════╗"
 echo "║                                                          ║"
-echo "║   ✅ Installation terminée !                             ║"
+echo "║   ✅ OpenStrat est prêt !                                ║"
 echo "║                                                          ║"
-echo "║   Pour lancer le dashboard :                             ║"
+echo "║   Dashboard : http://localhost:3456                      ║"
+echo "║   Dossier projets : $PARENT_DIR                          ║"
 echo "║                                                          ║"
-echo "║      cd openstrat                                        ║"
-echo "║      npm start                                           ║"
+echo "║   Commandes utiles :                                     ║"
+echo "║     openstrat              → relancer le dashboard       ║"
+echo "║     lsof -ti:3456 | xargs kill  → arrêter le serveur     ║"
 echo "║                                                          ║"
-echo "║   Puis ouvrez http://localhost:3456 dans votre navigateur ║"
+echo "║   Prochaines étapes :                                    ║"
+echo "║   1. Créez un dossier dans $PARENT_DIR :                 ║"
+echo "║      mkdir $PARENT_DIR/mon-projet                        ║"
+echo "║   2. Ouvrez http://localhost:3456                        ║"
+echo "║   3. Cliquez sur 🔄 pour scanner                         ║"
+echo "║   4. Sélectionnez votre projet et générez agents/skills  ║"
 echo "║                                                          ║"
 echo "╚══════════════════════════════════════════════════════════╝"
 echo ""
 
-# Proposer de lancer immédiatement
-read -p "🚀 Lancer le dashboard maintenant ? (Y/n) " -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[Nn]$ ]]; then
-    echo ""
-    npm start
-fi
+echo ""
+echo "💡 Astuce : l'alias 'openstrat' est disponible dans un nouveau terminal"
