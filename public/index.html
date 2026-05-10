@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenStrat — Agent Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+    .editor { font-family: 'Menlo', 'Monaco', 'Courier New', monospace; }
+    .list-item:hover { background: rgba(255,255,255,0.04); }
+    .list-item.active { background: rgba(99, 102, 241, 0.15); border-left: 3px solid #6366f1; }
+    .nav-item:hover { background: rgba(255,255,255,0.05); }
+    .nav-item.active { background: rgba(99, 102, 241, 0.12); color: #818cf8; border-right: 2px solid #6366f1; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 3px; }
+    .phase-card { transition: all 0.2s ease; }
+    .phase-card:hover { transform: translateY(-2px); }
+    .markdown-body h1 { font-size: 1.5rem; font-weight: 700; margin: 1rem 0 0.5rem; color: #fff; }
+    .markdown-body h2 { font-size: 1.25rem; font-weight: 600; margin: 0.875rem 0 0.5rem; color: #e4e4e7; border-bottom: 1px solid #27272a; padding-bottom: 0.25rem; }
+    .markdown-body h3 { font-size: 1.1rem; font-weight: 600; margin: 0.75rem 0 0.5rem; color: #d4d4d8; }
+    .markdown-body p { margin: 0.5rem 0; line-height: 1.6; color: #a1a1aa; }
+    .markdown-body ul, .markdown-body ol { margin: 0.5rem 0; padding-left: 1.5rem; color: #a1a1aa; }
+    .markdown-body li { margin: 0.25rem 0; }
+    .markdown-body code { background: #27272a; padding: 0.125rem 0.375rem; border-radius: 0.25rem; font-size: 0.875em; color: #fbbf24; }
+    .markdown-body pre { background: #18181b; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; margin: 0.75rem 0; }
+    .markdown-body pre code { background: none; padding: 0; color: #e4e4e7; }
+    .markdown-body table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.875rem; }
+    .markdown-body th { background: #27272a; padding: 0.5rem; text-align: left; font-weight: 600; color: #e4e4e7; border-bottom: 2px solid #3f3f46; }
+    .markdown-body td { padding: 0.5rem; border-bottom: 1px solid #27272a; color: #a1a1aa; }
+    .markdown-body blockquote { border-left: 3px solid #6366f1; padding-left: 1rem; margin: 0.75rem 0; color: #71717a; font-style: italic; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-in { animation: fadeIn 0.3s ease-out; }
+    .logo-os { filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.3)); }
+  </style>
+</head>
+<body class="bg-zinc-950 text-zinc-100 h-screen flex overflow-hidden">
+
+  <!-- Sidebar Navigation -->
+  <aside class="w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col shrink-0">
+    <div class="p-4 border-b border-zinc-800">
+      <div class="flex items-center gap-3">
+        <!-- Logo OpenStrat -->
+        <svg class="w-8 h-8 logo-os shrink-0" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- O block -->
+          <rect x="4" y="4" width="14" height="14" rx="2" fill="#6366f1" opacity="0.9"/>
+          <rect x="8" y="8" width="6" height="6" rx="1" fill="#1e1b4b"/>
+          <!-- S block -->
+          <rect x="22" y="4" width="14" height="7" rx="2" fill="#818cf8" opacity="0.8"/>
+          <rect x="4" y="22" width="14" height="7" rx="2" fill="#818cf8" opacity="0.8"/>
+          <rect x="22" y="22" width="14" height="14" rx="2" fill="#6366f1" opacity="0.9"/>
+          <!-- Connection dot -->
+          <circle cx="20" cy="20" r="2" fill="#c7d2fe"/>
+        </svg>
+        <div>
+          <h1 class="text-sm font-bold text-white leading-tight tracking-tight">OpenStrat</h1>
+          <p class="text-[10px] text-zinc-500 leading-tight">Agent Dashboard</p>
+        </div>
+      </div>
+    </div>
+
+    <nav class="flex-1 py-2 overflow-y-auto">
+      <div class="px-3 py-1.5 text-[10px] font-semibold text-zinc-600 uppercase tracking-wider">Workspace</div>
+      <button onclick="switchView('agents')" id="nav-agents" class="nav-item active w-full text-left px-4 py-2.5 text-sm text-zinc-300 flex items-center gap-3 transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+        Agents
+        <span id="count-agents" class="ml-auto text-[10px] bg-zinc-800 text-zinc-500 px-1.5 py-0.5 rounded">0</span>
+      </button>
+      <button onclick="switchView('skills')" id="nav-skills" class="nav-item w-full text-left px-4 py-2.5 text-sm text-zinc-300 flex items-center gap-3 transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+        Skills
+        <span id="count-skills" class="ml-auto text-[10px] bg-zinc-800 text-zinc-500 px-1.5 py-0.5 rounded">0</span>
+      </button>
+
+      <div class="px-3 py-1.5 mt-4 text-[10px] font-semibold text-zinc-600 uppercase tracking-wider">Strategy</div>
+      <button onclick="switchView('picture')" id="nav-picture" class="nav-item w-full text-left px-4 py-2.5 text-sm text-zinc-300 flex items-center gap-3 transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0121 18.382V7.618a1 1 0 01-.553-.894L15 7m0 13V7"/></svg>
+        Picture
+      </button>
+      <button onclick="switchView('progress')" id="nav-progress" class="nav-item w-full text-left px-4 py-2.5 text-sm text-zinc-300 flex items-center gap-3 transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+        Progress
+      </button>
+      <button onclick="switchView('roadmap')" id="nav-roadmap" class="nav-item w-full text-left px-4 py-2.5 text-sm text-zinc-300 flex items-center gap-3 transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+        Roadmap
+      </button>
+    </nav>
+
+    <div class="p-3 border-t border-zinc-800">
+      <div class="flex items-center gap-2 text-[10px] text-zinc-600">
+        <span id="status-dot" class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+        <span id="status-text">Ready</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content Area -->
+  <main class="flex-1 flex flex-col min-w-0 overflow-hidden">
+    <!-- Welcome Banner (shown on first load) -->
+    <div id="welcome-banner" class="bg-gradient-to-r from-indigo-900/50 to-purple-900/30 border-b border-indigo-800/30 px-6 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></div>
+        <p class="text-xs text-indigo-300">
+          <span class="font-semibold">OpenStrat</span> — Dashboard pour projets IA avec OpenCode. 
+          <a href="#" onclick="document.getElementById('welcome-banner').style.display='none'; return false;" class="text-indigo-400 hover:text-indigo-300 underline ml-2">Cacher</a>
+        </p>
+      </div>
+    </div>
+
+    <!-- View: Agents -->
+    <div id="view-agents" class="view-section flex h-full">
+      <div class="w-80 bg-zinc-900/50 border-r border-zinc-800 flex flex-col">
+        <div class="p-4 border-b border-zinc-800">
+          <h2 class="font-semibold text-white text-sm">Agent Hierarchy</h2>
+          <p class="text-xs text-zinc-500 mt-0.5">Primary → Subagents</p>
+        </div>
+        <div class="flex-1 overflow-y-auto py-2" id="agents-list"></div>
+      </div>
+      <div class="flex-1 flex flex-col min-w-0">
+        <div class="h-12 border-b border-zinc-800 flex items-center justify-between px-4 bg-zinc-900/30">
+          <div class="flex items-center gap-2">
+            <span id="agent-mode-badge" class="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 font-mono">primary</span>
+            <h3 id="agent-title" class="font-semibold text-sm text-white">Select an agent</h3>
+          </div>
+          <button onclick="saveAgent()" class="px-3 py-1 text-xs bg-indigo-600 hover:bg-indigo-500 rounded text-white font-medium transition">Save</button>
+        </div>
+        <div class="flex-1 overflow-hidden">
+          <textarea id="agent-editor" class="editor w-full h-full bg-zinc-950 p-4 text-sm text-zinc-300 resize-none focus:outline-none" placeholder="Select an agent to view and edit its prompt..." spellcheck="false"></textarea>
+        </div>
+        <div class="h-7 border-t border-zinc-800 flex items-center px-4 text-[10px] text-zinc-600 bg-zinc-900/20 justify-between">
+          <span id="agent-char-count">0 chars</span>
+          <span>Cmd+S to save</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- View: Skills -->
+    <div id="view-skills" class="view-section hidden flex h-full">
+      <div class="w-80 bg-zinc-900/50 border-r border-zinc-800 flex flex-col">
+        <div class="p-4 border-b border-zinc-800">
+          <h2 class="font-semibold text-white text-sm">Skills Library</h2>
+          <p class="text-xs text-zinc-500 mt-0.5">.opencode/skills/&lt;name&gt;/SKILL.md</p>
+        </div>
+        <div class="flex-1 overflow-y-auto py-2" id="skills-list"></div>
+      </div>
+      <div class="flex-1 flex flex-col min-w-0">
+        <div class="h-12 border-b border-zinc-800 flex items-center justify-between px-4 bg-zinc-900/30">
+          <h3 id="skill-title" class="font-semibold text-sm text-white">Select a skill</h3>
+          <button onclick="saveSkill()" class="px-3 py-1 text-xs bg-indigo-600 hover:bg-indigo-500 rounded text-white font-medium transition">Save</button>
+        </div>
+        <div class="flex-1 overflow-hidden">
+          <textarea id="skill-editor" class="editor w-full h-full bg-zinc-950 p-4 text-sm text-zinc-300 resize-none focus:outline-none" placeholder="Select a skill to view and edit its definition..." spellcheck="false"></textarea>
+        </div>
+        <div class="h-7 border-t border-zinc-800 flex items-center px-4 text-[10px] text-zinc-600 bg-zinc-900/20 justify-between">
+          <span id="skill-char-count">0 chars</span>
+          <span>Cmd+S to save</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- View: Picture -->
+    <div id="view-picture" class="view-section hidden flex-1 overflow-y-auto p-6">
+      <div class="max-w-5xl mx-auto fade-in">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h2 class="text-2xl font-bold text-white">Project Picture</h2>
+            <p class="text-sm text-zinc-500 mt-1">Vision stratégique & cible produit</p>
+          </div>
+          <span class="text-xs text-zinc-600 bg-zinc-900 px-3 py-1.5 rounded-full border border-zinc-800">Strategic View</span>
+        </div>
+
+        <!-- Template Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+            <div class="text-indigo-400 text-xs font-semibold uppercase tracking-wider mb-2">Phase 1</div>
+            <h3 class="text-white font-semibold mb-1">Foundation</h3>
+            <p class="text-zinc-500 text-sm">Setup, architecture, premiers composants</p>
+            <div class="mt-3 flex items-center gap-2">
+              <div class="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden"><div class="h-full bg-indigo-500 rounded-full" style="width:30%"></div></div>
+              <span class="text-xs text-zinc-400">30%</span>
+            </div>
+          </div>
+          <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+            <div class="text-purple-400 text-xs font-semibold uppercase tracking-wider mb-2">Phase 2</div>
+            <h3 class="text-white font-semibold mb-1">Core Features</h3>
+            <p class="text-zinc-500 text-sm">Fonctionnalités principales, intégrations</p>
+            <div class="mt-3 flex items-center gap-2">
+              <div class="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden"><div class="h-full bg-purple-500 rounded-full" style="width:0%"></div></div>
+              <span class="text-xs text-zinc-400">0%</span>
+            </div>
+          </div>
+          <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+            <div class="text-emerald-400 text-xs font-semibold uppercase tracking-wider mb-2">Phase 3</div>
+            <h3 class="text-white font-semibold mb-1">Launch</h3>
+            <p class="text-zinc-500 text-sm">Tests, déploiement, itérations</p>
+            <div class="mt-3 flex items-center gap-2">
+              <div class="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden"><div class="h-full bg-emerald-500 rounded-full" style="width:0%"></div></div>
+              <span class="text-xs text-zinc-400">0%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Template Message -->
+        <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-8">
+          <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-lg bg-indigo-500/10 flex items-center justify-center shrink-0">
+              <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <div>
+              <h3 class="text-white font-semibold mb-2">Créez votre Picture</h3>
+              <p class="text-zinc-400 text-sm leading-relaxed">
+                Le fichier <code class="bg-zinc-800 px-1.5 py-0.5 rounded text-indigo-300">docs/PICTURE.md</code> n'existe pas encore dans votre projet. 
+                Créez-le pour définir votre vision stratégique, vos jalons et vos décisions clés.
+                Ce document guide votre agent principal dans les orientations produit.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Content from API if exists -->
+        <div id="picture-content" class="markdown-body"></div>
+      </div>
+    </div>
+
+    <!-- View: Progress -->
+    <div id="view-progress" class="view-section hidden flex-1 overflow-y-auto p-6">
+      <div class="max-w-5xl mx-auto fade-in">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h2 class="text-2xl font-bold text-white">Progress & Tasks</h2>
+            <p class="text-sm text-zinc-500 mt-1">What to do next + recommendations</p>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="loadProgress()" class="px-3 py-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 rounded text-zinc-300 transition">Refresh</button>
+          </div>
+        </div>
+        <div id="progress-content" class="markdown-body">
+          <div class="text-zinc-500 text-sm">Loading progress.md...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- View: Roadmap -->
+    <div id="view-roadmap" class="view-section hidden flex-1 overflow-y-auto p-6">
+      <div class="max-w-6xl mx-auto fade-in">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h2 class="text-2xl font-bold text-white">Picture × Progress Matrix</h2>
+            <p class="text-sm text-zinc-500 mt-1">Mapping tasks to strategic milestones</p>
+          </div>
+        </div>
+
+        <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-8 text-center">
+          <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-indigo-500/10 flex items-center justify-center">
+            <svg class="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+          </div>
+          <h3 class="text-white font-semibold text-lg mb-2">Matrix View</h3>
+          <p class="text-zinc-500 text-sm max-w-md mx-auto">
+            Cette vue affiche la matrice entre votre Picture (jalons stratégiques) et votre Progress (tâches en cours).
+            <br><br>
+            Créez <code class="bg-zinc-800 px-1.5 py-0.5 rounded text-indigo-300">docs/PICTURE.md</code> et <code class="bg-zinc-800 px-1.5 py-0.5 rounded text-indigo-300">progress.md</code> pour activer cette vue.
+          </p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // --- State ---
+    let currentView = 'agents';
+    let agents = [];
+    let skills = [];
+    let currentAgent = null;
+    let currentSkill = null;
+
+    // --- Navigation ---
+    function switchView(view) {
+      currentView = view;
+      document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+      document.getElementById('view-' + view).classList.remove('hidden');
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      document.getElementById('nav-' + view).classList.add('active');
+
+      if (view === 'progress') loadProgress();
+      if (view === 'picture') loadPicture();
+      if (view === 'roadmap') renderRoadmap();
+    }
+
+    // --- Agents ---
+    async function loadAgents() {
+      try {
+        const res = await fetch('/api/agents');
+        agents = await res.json();
+        document.getElementById('count-agents').textContent = agents.length;
+        renderAgentsList();
+      } catch (err) {
+        setStatus('No agents found', 'yellow');
+      }
+    }
+
+    function renderAgentsList() {
+      const container = document.getElementById('agents-list');
+      if (agents.length === 0) {
+        container.innerHTML = `
+          <div class="px-4 py-8 text-center">
+            <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-zinc-800 flex items-center justify-center">
+              <svg class="w-6 h-6 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+            </div>
+            <p class="text-xs text-zinc-500">No agents found</p>
+            <p class="text-[10px] text-zinc-600 mt-1">Create .opencode/agents/&lt;name&gt;.md</p>
+          </div>
+        `;
+        return;
+      }
+
+      const primary = agents.filter(a => a.name === 'main' || a.name.includes('main'));
+      const subagents = agents.filter(a => !(a.name === 'main' || a.name.includes('main')));
+
+      let html = '';
+      if (primary.length > 0) {
+        html += `<div class="px-3 py-2 text-[10px] font-semibold text-indigo-400 uppercase tracking-wider bg-indigo-500/5">● Primary Agent</div>`;
+        primary.forEach(a => html += renderAgentItem(a, 'primary'));
+      }
+      if (subagents.length > 0) {
+        html += `<div class="px-3 py-2 text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mt-2">Subagents</div>`;
+        subagents.forEach(a => html += renderAgentItem(a, 'subagent'));
+      }
+      container.innerHTML = html;
+    }
+
+    function renderAgentItem(agent, type) {
+      const isActive = currentAgent === agent.name;
+      const colorClass = type === 'primary' ? 'text-indigo-400' : 'text-zinc-400';
+      const icon = type === 'primary'
+        ? `<svg class="w-3.5 h-3.5 ${colorClass} shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>`
+        : `<svg class="w-3.5 h-3.5 ${colorClass} shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>`;
+
+      return `
+        <div class="list-item px-4 py-2.5 cursor-pointer text-sm ${isActive ? 'active' : ''}" onclick="selectAgent('${agent.name}')">
+          <div class="flex items-center gap-2">
+            ${icon}
+            <span class="truncate ${type === 'primary' ? 'font-medium text-white' : 'text-zinc-300'}">${agent.name}</span>
+          </div>
+          <div class="text-[10px] text-zinc-600 mt-0.5 ml-5 truncate">${agent.path.replace(/.*\//, '')}</div>
+        </div>
+      `;
+    }
+
+    async function selectAgent(name) {
+      currentAgent = name;
+      renderAgentsList();
+      try {
+        const content = await fetch(`/api/agents/${name}`).then(r => r.text());
+        document.getElementById('agent-editor').value = content;
+        document.getElementById('agent-title').textContent = name;
+        const isPrimary = name === 'main' || name.includes('main');
+        document.getElementById('agent-mode-badge').textContent = isPrimary ? 'primary' : 'subagent';
+        updateCharCount('agent-editor', 'agent-char-count');
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    }
+
+    async function saveAgent() {
+      if (!currentAgent) return;
+      const content = document.getElementById('agent-editor').value;
+      try {
+        await fetch(`/api/agents/${currentAgent}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: content
+        });
+        showToast('Agent saved');
+      } catch (err) {
+        alert('Save failed: ' + err.message);
+      }
+    }
+
+    // --- Skills ---
+    async function loadSkills() {
+      try {
+        const res = await fetch('/api/skills');
+        skills = await res.json();
+        document.getElementById('count-skills').textContent = skills.length;
+        renderSkillsList();
+      } catch (err) {
+        setStatus('No skills found', 'yellow');
+      }
+    }
+
+    function renderSkillsList() {
+      const container = document.getElementById('skills-list');
+      if (skills.length === 0) {
+        container.innerHTML = `
+          <div class="px-4 py-8 text-center">
+            <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-zinc-800 flex items-center justify-center">
+              <svg class="w-6 h-6 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+            </div>
+            <p class="text-xs text-zinc-500">No skills found</p>
+            <p class="text-[10px] text-zinc-600 mt-1">Create .opencode/skills/&lt;name&gt;/SKILL.md</p>
+          </div>
+        `;
+        return;
+      }
+      container.innerHTML = skills.map(s => {
+        const isActive = currentSkill === s.name;
+        return `
+          <div class="list-item px-4 py-2.5 cursor-pointer text-sm ${isActive ? 'active' : ''}" onclick="selectSkill('${s.name}')">
+            <div class="flex items-center gap-2">
+              <svg class="w-3.5 h-3.5 text-zinc-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+              <span class="truncate text-zinc-300">${s.name}</span>
+            </div>
+            <div class="text-[10px] text-zinc-600 mt-0.5 ml-5 truncate">${s.path.replace(/.*\.opencode\//, '')}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function selectSkill(name) {
+      currentSkill = name;
+      renderSkillsList();
+      try {
+        const content = await fetch(`/api/skills/${name}`).then(r => r.text());
+        document.getElementById('skill-editor').value = content;
+        document.getElementById('skill-title').textContent = name;
+        updateCharCount('skill-editor', 'skill-char-count');
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    }
+
+    async function saveSkill() {
+      if (!currentSkill) return;
+      const content = document.getElementById('skill-editor').value;
+      try {
+        await fetch(`/api/skills/${currentSkill}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: content
+        });
+        showToast('Skill saved');
+      } catch (err) {
+        alert('Save failed: ' + err.message);
+      }
+    }
+
+    // --- Picture ---
+    async function loadPicture() {
+      try {
+        const res = await fetch('/api/picture');
+        const text = await res.text();
+        if (text.includes('# Picture') || text.includes('# picture') || text.includes('Vision')) {
+          document.getElementById('picture-content').innerHTML = marked.parse(text);
+        }
+      } catch (err) {
+        // Template already shown
+      }
+    }
+
+    // --- Progress ---
+    async function loadProgress() {
+      try {
+        const res = await fetch('/api/progress');
+        const text = await res.text();
+        document.getElementById('progress-content').innerHTML = marked.parse(text);
+      } catch (err) {
+        document.getElementById('progress-content').innerHTML = '<div class="text-red-400">Error loading progress.md</div>';
+      }
+    }
+
+    // --- Roadmap ---
+    function renderRoadmap() {
+      // Simplified for standalone
+    }
+
+    // --- Utilities ---
+    function updateCharCount(editorId, countId) {
+      const len = document.getElementById(editorId).value.length;
+      document.getElementById(countId).textContent = len + ' chars';
+    }
+
+    function setStatus(text, color) {
+      document.getElementById('status-text').textContent = text;
+      const colors = { green: 'bg-green-500', yellow: 'bg-yellow-500', red: 'bg-red-500' };
+      document.getElementById('status-dot').className = 'w-1.5 h-1.5 rounded-full mr-1 ' + (colors[color] || 'bg-zinc-500');
+    }
+
+    function showToast(msg) {
+      const toast = document.createElement('div');
+      toast.className = 'fixed bottom-4 right-4 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm shadow-lg z-50 fade-in';
+      toast.textContent = msg;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 2000);
+    }
+
+    // --- Keyboard shortcuts ---
+    document.addEventListener('keydown', e => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+        e.preventDefault();
+        if (currentView === 'agents') saveAgent();
+        if (currentView === 'skills') saveSkill();
+      }
+    });
+
+    document.getElementById('agent-editor').addEventListener('input', () => updateCharCount('agent-editor', 'agent-char-count'));
+    document.getElementById('skill-editor').addEventListener('input', () => updateCharCount('skill-editor', 'skill-char-count'));
+
+    // --- Init ---
+    loadAgents();
+    loadSkills();
+    
+    // Check health
+    fetch('/api/health').then(r => r.json()).then(data => {
+      if (data.agentsDir || data.skillsDir) {
+        setStatus('Connected', 'green');
+      } else {
+        setStatus('No project found', 'yellow');
+      }
+    }).catch(() => setStatus('Disconnected', 'red'));
+  </script>
+</body>
+</html>
