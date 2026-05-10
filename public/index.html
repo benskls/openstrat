@@ -35,6 +35,8 @@
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
     .fade-in { animation: fadeIn 0.3s ease-out; }
     .logo-os { filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.3)); }
+    select { background-image: none; }
+    .project-select:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2); }
   </style>
 </head>
 <body class="bg-zinc-950 text-zinc-100 h-screen flex overflow-hidden">
@@ -43,16 +45,12 @@
   <aside class="w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col shrink-0">
     <div class="p-4 border-b border-zinc-800">
       <div class="flex items-center gap-3">
-        <!-- Logo OpenStrat -->
         <svg class="w-8 h-8 logo-os shrink-0" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <!-- O block -->
           <rect x="4" y="4" width="14" height="14" rx="2" fill="#6366f1" opacity="0.9"/>
           <rect x="8" y="8" width="6" height="6" rx="1" fill="#1e1b4b"/>
-          <!-- S block -->
           <rect x="22" y="4" width="14" height="7" rx="2" fill="#818cf8" opacity="0.8"/>
           <rect x="4" y="22" width="14" height="7" rx="2" fill="#818cf8" opacity="0.8"/>
           <rect x="22" y="22" width="14" height="14" rx="2" fill="#6366f1" opacity="0.9"/>
-          <!-- Connection dot -->
           <circle cx="20" cy="20" r="2" fill="#c7d2fe"/>
         </svg>
         <div>
@@ -60,6 +58,14 @@
           <p class="text-[10px] text-zinc-500 leading-tight">Agent Dashboard</p>
         </div>
       </div>
+    </div>
+
+    <!-- Project Selector -->
+    <div class="px-4 py-3 border-b border-zinc-800">
+      <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">Projet actif</label>
+      <select id="project-select" onchange="changeProject(this.value)" class="project-select w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white appearance-none cursor-pointer transition">
+        <option value="" disabled>Chargement...</option>
+      </select>
     </div>
 
     <nav class="flex-1 py-2 overflow-y-auto">
@@ -100,13 +106,13 @@
 
   <!-- Main Content Area -->
   <main class="flex-1 flex flex-col min-w-0 overflow-hidden">
-    <!-- Welcome Banner (shown on first load) -->
+    <!-- Welcome Banner -->
     <div id="welcome-banner" class="bg-gradient-to-r from-indigo-900/50 to-purple-900/30 border-b border-indigo-800/30 px-6 py-3 flex items-center justify-between">
       <div class="flex items-center gap-3">
         <div class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></div>
         <p class="text-xs text-indigo-300">
-          <span class="font-semibold">OpenStrat</span> — Dashboard pour projets IA avec OpenCode. 
-          <a href="#" onclick="document.getElementById('welcome-banner').style.display='none'; return false;" class="text-indigo-400 hover:text-indigo-300 underline ml-2">Cacher</a>
+          <span class="font-semibold">OpenStrat</span> — Multi-project dashboard for OpenCode. 
+          <a href="#" onclick="document.getElementById('welcome-banner').style.display='none'; return false;" class="text-indigo-400 hover:text-indigo-300 underline ml-2">Dismiss</a>
         </p>
       </div>
     </div>
@@ -116,7 +122,7 @@
       <div class="w-80 bg-zinc-900/50 border-r border-zinc-800 flex flex-col">
         <div class="p-4 border-b border-zinc-800">
           <h2 class="font-semibold text-white text-sm">Agent Hierarchy</h2>
-          <p class="text-xs text-zinc-500 mt-0.5">Primary → Subagents</p>
+          <p class="text-xs text-zinc-500 mt-0.5" id="agents-project-label">Select a project</p>
         </div>
         <div class="flex-1 overflow-y-auto py-2" id="agents-list"></div>
       </div>
@@ -143,7 +149,7 @@
       <div class="w-80 bg-zinc-900/50 border-r border-zinc-800 flex flex-col">
         <div class="p-4 border-b border-zinc-800">
           <h2 class="font-semibold text-white text-sm">Skills Library</h2>
-          <p class="text-xs text-zinc-500 mt-0.5">.opencode/skills/&lt;name&gt;/SKILL.md</p>
+          <p class="text-xs text-zinc-500 mt-0.5" id="skills-project-label">Select a project</p>
         </div>
         <div class="flex-1 overflow-y-auto py-2" id="skills-list"></div>
       </div>
@@ -168,61 +174,21 @@
         <div class="flex items-center justify-between mb-6">
           <div>
             <h2 class="text-2xl font-bold text-white">Project Picture</h2>
-            <p class="text-sm text-zinc-500 mt-1">Vision stratégique & cible produit</p>
-          </div>
-          <span class="text-xs text-zinc-600 bg-zinc-900 px-3 py-1.5 rounded-full border border-zinc-800">Strategic View</span>
-        </div>
-
-        <!-- Template Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-            <div class="text-indigo-400 text-xs font-semibold uppercase tracking-wider mb-2">Phase 1</div>
-            <h3 class="text-white font-semibold mb-1">Foundation</h3>
-            <p class="text-zinc-500 text-sm">Setup, architecture, premiers composants</p>
-            <div class="mt-3 flex items-center gap-2">
-              <div class="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden"><div class="h-full bg-indigo-500 rounded-full" style="width:30%"></div></div>
-              <span class="text-xs text-zinc-400">30%</span>
-            </div>
-          </div>
-          <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-            <div class="text-purple-400 text-xs font-semibold uppercase tracking-wider mb-2">Phase 2</div>
-            <h3 class="text-white font-semibold mb-1">Core Features</h3>
-            <p class="text-zinc-500 text-sm">Fonctionnalités principales, intégrations</p>
-            <div class="mt-3 flex items-center gap-2">
-              <div class="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden"><div class="h-full bg-purple-500 rounded-full" style="width:0%"></div></div>
-              <span class="text-xs text-zinc-400">0%</span>
-            </div>
-          </div>
-          <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-            <div class="text-emerald-400 text-xs font-semibold uppercase tracking-wider mb-2">Phase 3</div>
-            <h3 class="text-white font-semibold mb-1">Launch</h3>
-            <p class="text-zinc-500 text-sm">Tests, déploiement, itérations</p>
-            <div class="mt-3 flex items-center gap-2">
-              <div class="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden"><div class="h-full bg-emerald-500 rounded-full" style="width:0%"></div></div>
-              <span class="text-xs text-zinc-400">0%</span>
-            </div>
+            <p class="text-sm text-zinc-500 mt-1" id="picture-project-label">Select a project</p>
           </div>
         </div>
-
-        <!-- Template Message -->
-        <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-8">
-          <div class="flex items-start gap-4">
-            <div class="w-10 h-10 rounded-lg bg-indigo-500/10 flex items-center justify-center shrink-0">
-              <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <div id="picture-content" class="markdown-body">
+          <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-8 text-center">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-indigo-500/10 flex items-center justify-center">
+              <svg class="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0121 18.382V7.618a1 1 0 01-.553-.894L15 7m0 13V7"/></svg>
             </div>
-            <div>
-              <h3 class="text-white font-semibold mb-2">Créez votre Picture</h3>
-              <p class="text-zinc-400 text-sm leading-relaxed">
-                Le fichier <code class="bg-zinc-800 px-1.5 py-0.5 rounded text-indigo-300">docs/PICTURE.md</code> n'existe pas encore dans votre projet. 
-                Créez-le pour définir votre vision stratégique, vos jalons et vos décisions clés.
-                Ce document guide votre agent principal dans les orientations produit.
-              </p>
-            </div>
+            <h3 class="text-white font-semibold text-lg mb-2">No Picture Yet</h3>
+            <p class="text-zinc-500 text-sm max-w-md mx-auto">
+              Select a project from the sidebar to view its strategic vision. 
+              If none exists, a template will be provided.
+            </p>
           </div>
         </div>
-
-        <!-- Content from API if exists -->
-        <div id="picture-content" class="markdown-body"></div>
       </div>
     </div>
 
@@ -232,14 +198,14 @@
         <div class="flex items-center justify-between mb-6">
           <div>
             <h2 class="text-2xl font-bold text-white">Progress & Tasks</h2>
-            <p class="text-sm text-zinc-500 mt-1">What to do next + recommendations</p>
+            <p class="text-sm text-zinc-500 mt-1" id="progress-project-label">Select a project</p>
           </div>
           <div class="flex gap-2">
             <button onclick="loadProgress()" class="px-3 py-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 rounded text-zinc-300 transition">Refresh</button>
           </div>
         </div>
         <div id="progress-content" class="markdown-body">
-          <div class="text-zinc-500 text-sm">Loading progress.md...</div>
+          <div class="text-zinc-500 text-sm">Select a project to view progress.</div>
         </div>
       </div>
     </div>
@@ -253,52 +219,135 @@
             <p class="text-sm text-zinc-500 mt-1">Mapping tasks to strategic milestones</p>
           </div>
         </div>
-
-        <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-8 text-center">
-          <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-indigo-500/10 flex items-center justify-center">
-            <svg class="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        <div id="roadmap-matrix">
+          <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-8 text-center">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-indigo-500/10 flex items-center justify-center">
+              <svg class="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            </div>
+            <h3 class="text-white font-semibold text-lg mb-2">Matrix View</h3>
+            <p class="text-zinc-500 text-sm max-w-md mx-auto">
+              Select a project to see the alignment between strategic milestones and current tasks.
+            </p>
           </div>
-          <h3 class="text-white font-semibold text-lg mb-2">Matrix View</h3>
-          <p class="text-zinc-500 text-sm max-w-md mx-auto">
-            Cette vue affiche la matrice entre votre Picture (jalons stratégiques) et votre Progress (tâches en cours).
-            <br><br>
-            Créez <code class="bg-zinc-800 px-1.5 py-0.5 rounded text-indigo-300">docs/PICTURE.md</code> et <code class="bg-zinc-800 px-1.5 py-0.5 rounded text-indigo-300">progress.md</code> pour activer cette vue.
-          </p>
         </div>
       </div>
     </div>
   </main>
 
   <script>
-    // --- State ---
+    // ─── State ───────────────────────────────────────────────────────
     let currentView = 'agents';
+    let currentProject = localStorage.getItem('openstrat-project') || '';
+    let projects = [];
     let agents = [];
     let skills = [];
     let currentAgent = null;
     let currentSkill = null;
 
-    // --- Navigation ---
+    // ─── Project Management ──────────────────────────────────────────
+
+    async function loadProjects() {
+      try {
+        const res = await fetch('/api/projects');
+        projects = await res.json();
+        
+        const select = document.getElementById('project-select');
+        select.innerHTML = '';
+        
+        if (projects.length === 0) {
+          select.innerHTML = '<option value="" disabled>Aucun projet trouvé</option>';
+          setStatus('No projects found', 'yellow');
+          return;
+        }
+        
+        // Add default option
+        const defaultOpt = document.createElement('option');
+        defaultOpt.value = '';
+        defaultOpt.textContent = 'Sélectionner un projet...';
+        defaultOpt.disabled = true;
+        select.appendChild(defaultOpt);
+        
+        projects.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.id;
+          opt.textContent = p.name + (p.isOpencode ? ' ●' : '');
+          select.appendChild(opt);
+        });
+        
+        // Restore selection
+        if (currentProject && projects.find(p => p.id === currentProject)) {
+          select.value = currentProject;
+          loadProjectData();
+        } else if (projects.length > 0) {
+          // Auto-select first
+          currentProject = projects[0].id;
+          select.value = currentProject;
+          localStorage.setItem('openstrat-project', currentProject);
+          loadProjectData();
+        }
+        
+        setStatus('Ready', 'green');
+      } catch (err) {
+        setStatus('Error loading projects', 'red');
+      }
+    }
+
+    function changeProject(projectId) {
+      if (!projectId) return;
+      currentProject = projectId;
+      localStorage.setItem('openstrat-project', projectId);
+      currentAgent = null;
+      currentSkill = null;
+      loadProjectData();
+    }
+
+    function loadProjectData() {
+      if (!currentProject) return;
+      
+      // Update labels
+      const projectName = projects.find(p => p.id === currentProject)?.name || currentProject;
+      document.getElementById('agents-project-label').textContent = projectName;
+      document.getElementById('skills-project-label').textContent = projectName;
+      document.getElementById('picture-project-label').textContent = projectName;
+      document.getElementById('progress-project-label').textContent = projectName;
+      
+      // Load based on current view
+      if (currentView === 'agents') { loadAgents(); }
+      else if (currentView === 'skills') { loadSkills(); }
+      else if (currentView === 'picture') { loadPicture(); }
+      else if (currentView === 'progress') { loadProgress(); }
+      else if (currentView === 'roadmap') { renderRoadmap(); }
+    }
+
+    // ─── Navigation ──────────────────────────────────────────────────
+
     function switchView(view) {
       currentView = view;
       document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
       document.getElementById('view-' + view).classList.remove('hidden');
       document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
       document.getElementById('nav-' + view).classList.add('active');
-
-      if (view === 'progress') loadProgress();
-      if (view === 'picture') loadPicture();
-      if (view === 'roadmap') renderRoadmap();
+      
+      if (currentProject) {
+        if (view === 'agents') loadAgents();
+        if (view === 'skills') loadSkills();
+        if (view === 'picture') loadPicture();
+        if (view === 'progress') loadProgress();
+        if (view === 'roadmap') renderRoadmap();
+      }
     }
 
-    // --- Agents ---
+    // ─── Agents ──────────────────────────────────────────────────────
+
     async function loadAgents() {
+      if (!currentProject) return;
       try {
-        const res = await fetch('/api/agents');
+        const res = await fetch(`/api/agents?project=${encodeURIComponent(currentProject)}`);
         agents = await res.json();
         document.getElementById('count-agents').textContent = agents.length;
         renderAgentsList();
       } catch (err) {
-        setStatus('No agents found', 'yellow');
+        setStatus('Error loading agents', 'yellow');
       }
     }
 
@@ -351,10 +400,11 @@
     }
 
     async function selectAgent(name) {
+      if (!currentProject) return;
       currentAgent = name;
       renderAgentsList();
       try {
-        const content = await fetch(`/api/agents/${name}`).then(r => r.text());
+        const content = await fetch(`/api/agents/${name}?project=${encodeURIComponent(currentProject)}`).then(r => r.text());
         document.getElementById('agent-editor').value = content;
         document.getElementById('agent-title').textContent = name;
         const isPrimary = name === 'main' || name.includes('main');
@@ -366,10 +416,10 @@
     }
 
     async function saveAgent() {
-      if (!currentAgent) return;
+      if (!currentProject || !currentAgent) return;
       const content = document.getElementById('agent-editor').value;
       try {
-        await fetch(`/api/agents/${currentAgent}`, {
+        await fetch(`/api/agents/${currentAgent}?project=${encodeURIComponent(currentProject)}`, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain' },
           body: content
@@ -380,15 +430,17 @@
       }
     }
 
-    // --- Skills ---
+    // ─── Skills ──────────────────────────────────────────────────────
+
     async function loadSkills() {
+      if (!currentProject) return;
       try {
-        const res = await fetch('/api/skills');
+        const res = await fetch(`/api/skills?project=${encodeURIComponent(currentProject)}`);
         skills = await res.json();
         document.getElementById('count-skills').textContent = skills.length;
         renderSkillsList();
       } catch (err) {
-        setStatus('No skills found', 'yellow');
+        setStatus('Error loading skills', 'yellow');
       }
     }
 
@@ -421,10 +473,11 @@
     }
 
     async function selectSkill(name) {
+      if (!currentProject) return;
       currentSkill = name;
       renderSkillsList();
       try {
-        const content = await fetch(`/api/skills/${name}`).then(r => r.text());
+        const content = await fetch(`/api/skills/${name}?project=${encodeURIComponent(currentProject)}`).then(r => r.text());
         document.getElementById('skill-editor').value = content;
         document.getElementById('skill-title').textContent = name;
         updateCharCount('skill-editor', 'skill-char-count');
@@ -434,10 +487,10 @@
     }
 
     async function saveSkill() {
-      if (!currentSkill) return;
+      if (!currentProject || !currentSkill) return;
       const content = document.getElementById('skill-editor').value;
       try {
-        await fetch(`/api/skills/${currentSkill}`, {
+        await fetch(`/api/skills/${currentSkill}?project=${encodeURIComponent(currentProject)}`, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain' },
           body: content
@@ -448,36 +501,56 @@
       }
     }
 
-    // --- Picture ---
+    // ─── Picture ─────────────────────────────────────────────────────
+
     async function loadPicture() {
+      if (!currentProject) return;
       try {
-        const res = await fetch('/api/picture');
+        const res = await fetch(`/api/picture?project=${encodeURIComponent(currentProject)}`);
         const text = await res.text();
         if (text.includes('# Picture') || text.includes('# picture') || text.includes('Vision')) {
           document.getElementById('picture-content').innerHTML = marked.parse(text);
+        } else {
+          document.getElementById('picture-content').innerHTML = `<div class="markdown-body">${marked.parse(text)}</div>`;
         }
       } catch (err) {
-        // Template already shown
+        document.getElementById('picture-content').innerHTML = '<div class="text-red-400">Error loading picture</div>';
       }
     }
 
-    // --- Progress ---
+    // ─── Progress ────────────────────────────────────────────────────
+
     async function loadProgress() {
+      if (!currentProject) return;
       try {
-        const res = await fetch('/api/progress');
+        const res = await fetch(`/api/progress?project=${encodeURIComponent(currentProject)}`);
         const text = await res.text();
         document.getElementById('progress-content').innerHTML = marked.parse(text);
       } catch (err) {
-        document.getElementById('progress-content').innerHTML = '<div class="text-red-400">Error loading progress.md</div>';
+        document.getElementById('progress-content').innerHTML = '<div class="text-red-400">Error loading progress</div>';
       }
     }
 
-    // --- Roadmap ---
+    // ─── Roadmap ─────────────────────────────────────────────────────
+
     function renderRoadmap() {
-      // Simplified for standalone
+      // Placeholder - can be enhanced with real data parsing
+      const container = document.getElementById('roadmap-matrix');
+      container.innerHTML = `
+        <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-8 text-center">
+          <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-indigo-500/10 flex items-center justify-center">
+            <svg class="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+          </div>
+          <h3 class="text-white font-semibold text-lg mb-2">Matrix View</h3>
+          <p class="text-zinc-500 text-sm max-w-md mx-auto">
+            The roadmap matrix shows the alignment between strategic milestones (Picture) and current tasks (Progress).
+          </p>
+        </div>
+      `;
     }
 
-    // --- Utilities ---
+    // ─── Utilities ───────────────────────────────────────────────────
+
     function updateCharCount(editorId, countId) {
       const len = document.getElementById(editorId).value.length;
       document.getElementById(countId).textContent = len + ' chars';
@@ -497,7 +570,8 @@
       setTimeout(() => toast.remove(), 2000);
     }
 
-    // --- Keyboard shortcuts ---
+    // ─── Keyboard shortcuts ──────────────────────────────────────────
+
     document.addEventListener('keydown', e => {
       if ((e.metaKey || e.ctrlKey) && e.key === 's') {
         e.preventDefault();
@@ -509,18 +583,9 @@
     document.getElementById('agent-editor').addEventListener('input', () => updateCharCount('agent-editor', 'agent-char-count'));
     document.getElementById('skill-editor').addEventListener('input', () => updateCharCount('skill-editor', 'skill-char-count'));
 
-    // --- Init ---
-    loadAgents();
-    loadSkills();
-    
-    // Check health
-    fetch('/api/health').then(r => r.json()).then(data => {
-      if (data.agentsDir || data.skillsDir) {
-        setStatus('Connected', 'green');
-      } else {
-        setStatus('No project found', 'yellow');
-      }
-    }).catch(() => setStatus('Disconnected', 'red'));
+    // ─── Init ────────────────────────────────────────────────────────
+
+    loadProjects();
   </script>
 </body>
 </html>

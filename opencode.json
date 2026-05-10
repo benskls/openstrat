@@ -1,0 +1,28 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "agent": {
+    "main-openstrat": {
+      "mode": "primary",
+      "description": "Orchestrateur OpenStrat — garde la vision produit du dashboard",
+      "temperature": 0.2
+    },
+    "backend-openstrat": {
+      "mode": "subagent",
+      "description": "Expert backend Express.js — API, scan fichiers, multi-projets",
+      "temperature": 0.2,
+      "tools": {
+        "write": true,
+        "bash": true
+      }
+    },
+    "frontend-openstrat": {
+      "mode": "subagent",
+      "description": "Expert frontend vanilla — UI dashboard, Tailwind, composants",
+      "temperature": 0.2,
+      "tools": {
+        "write": true,
+        "edit": true
+      }
+    }
+  }
+}
