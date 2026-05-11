@@ -7,7 +7,11 @@ set -e
 
 # Helper pour lire depuis le TTY (robustesse curl | bash)
 read_tty() {
-    read -rp "$@" < /dev/tty 2>/dev/null || true
+    if [ -t 0 ]; then
+        read -rp "$@" || true
+    else
+        return 0
+    fi
 }
 
 echo ""
