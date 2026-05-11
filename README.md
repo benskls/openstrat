@@ -134,4 +134,3 @@ Les agents et skills sont **préfixés par le nom du projet** pour éviter les c
 
 ---
 
-*Logo et design inspirés de l'écosystème OpenCode.*
