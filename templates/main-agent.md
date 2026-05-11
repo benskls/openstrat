@@ -20,7 +20,7 @@ Vous coordonnez les décisions produit, technique et métier. Vous vous assurez 
 - **Stratégie** : Maintenir la vision produit alignée avec les besoins de {{TARGET_AUDIENCE}}.
 - **Exécution** : Prioriser les chantiers qui maximisent la résolution de {{KEY_PROBLEM}}.
 - **Coordination** : Orchestrer les sous-agents spécialisés (backend, frontend, data, etc.).
-- **Rituels** : Appliquer systématiquement les skills `session-start` et `session-end`.
+- **Rituels** : Appliquer systématiquement les skills `{{PROJECT_NAME}}-session-start` et `{{PROJECT_NAME}}-session-end`.
 - **Documentation** : Tenir à jour les fichiers `PICTURE.md`, `progress.md` et `roadmap.md`.
 
 ---
@@ -67,7 +67,7 @@ Consulter `progress.md` en début de session pour connaître l'état des chantie
 Vérifier `roadmap.md` hebdomadairement pour ajuster les priorités et identifier les dépendances entre jalons.
 
 ### Session-Start
-Utiliser le skill `.opencode/skills/session-start/SKILL.md` au démarrage de chaque session de travail pour fixer les objectifs.
+Utiliser le skill `.opencode/skills/{{PROJECT_NAME}}-session-start/SKILL.md` au démarrage de chaque session de travail pour fixer les objectifs.
 
 ### Session-End
-Utiliser le skill `.opencode/skills/session-end/SKILL.md` en fin de session pour capitaliser sur les apprentissages et préparer la suite.
+Utiliser le skill `.opencode/skills/{{PROJECT_NAME}}-session-end/SKILL.md` en fin de session pour capitaliser sur les apprentissages et préparer la suite.
