@@ -130,8 +130,14 @@ fi
 
 ALIAS_LINE="alias openstrat='cd $INSTALL_DIR && npm start'"
 
-if [ -f "$SHELL_RC" ] && grep -qF "$ALIAS_LINE" "$SHELL_RC"; then
-    echo "ℹ️  Alias déjà présent dans $SHELL_RC"
+if [ -f "$SHELL_RC" ] && grep -q "alias openstrat=" "$SHELL_RC"; then
+    # Remplacer l'ancien alias
+    sed -i '' "/alias openstrat=/c\\
+$ALIAS_LINE" "$SHELL_RC" 2>/dev/null || \
+    sed -i "/alias openstrat=/c\\
+$ALIAS_LINE" "$SHELL_RC"
+    echo "✅ Alias mis à jour dans $SHELL_RC"
+    echo "   Pour l'utiliser immédiatement, exécutez : source $SHELL_RC"
 else
     {
         echo ""
@@ -146,19 +152,26 @@ fi
 # 6. Proposer de lancer immédiatement
 # ─────────────────────────────────────────────────────────────
 echo ""
-echo "🚀 Lancer le dashboard maintenant ? (Y/n)"
-read_tty "" -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+
+# Vérifier si le port est déjà utilisé
+if lsof -ti:3456 > /dev/null 2>&1; then
+    echo "ℹ️  OpenStrat est déjà en cours d'exécution sur http://localhost:3456"
+    echo "   Pour l'arrêter : lsof -ti:3456 | xargs kill"
     echo ""
-    echo "🚀 Démarrage d'OpenStrat..."
-    echo "   http://localhost:3456"
-    echo "   (Ctrl+C pour arrêter)"
-    echo ""
-    npm start
 else
-    echo ""
-    echo "💡 Pour lancer plus tard : openstrat"
+    read_tty "🚀 Lancer le dashboard maintenant ? (Y/n) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+        echo ""
+        echo "🚀 Démarrage d'OpenStrat..."
+        echo "   http://localhost:3456"
+        echo "   (Ctrl+C pour arrêter)"
+        echo ""
+        npm start
+    else
+        echo ""
+        echo "💡 Pour lancer plus tard : openstrat"
+    fi
 fi
 
 # ─────────────────────────────────────────────────────────────
