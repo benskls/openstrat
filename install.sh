@@ -50,7 +50,8 @@ else
 fi
 
 echo ""
-echo "📁 Où voulez-vous placer votre dossier de projets ?"
+echo "📁 Dossier racine"
+echo "   Ce dossier contiendra openstrat/ ET vos futurs projets."
 echo "   [défaut: $DEFAULT_PARENT_DIR]"
 read_tty "" PARENT_DIR
 PARENT_DIR=${PARENT_DIR:-$DEFAULT_PARENT_DIR}
@@ -169,14 +170,14 @@ echo "║                                                          ║"
 echo "║   ✅ OpenStrat est prêt !                                ║"
 echo "║                                                          ║"
 echo "║   Dashboard : http://localhost:3456                      ║"
-echo "║   Dossier projets : $PARENT_DIR                          ║"
+echo "║   Dossier racine : $PARENT_DIR                           ║"
 echo "║                                                          ║"
 echo "║   Commandes utiles :                                     ║"
 echo "║     openstrat              → relancer le dashboard       ║"
 echo "║     lsof -ti:3456 | xargs kill  → arrêter le serveur     ║"
 echo "║                                                          ║"
 echo "║   Prochaines étapes :                                    ║"
-echo "║   1. Créez un dossier dans $PARENT_DIR :                 ║"
+echo "║   1. Créez un projet dans $PARENT_DIR :                  ║"
 echo "║      mkdir $PARENT_DIR/mon-projet                        ║"
 echo "║   2. Ouvrez http://localhost:3456                        ║"
 echo "║   3. Cliquez sur 🔄 pour scanner                         ║"
