@@ -78,6 +78,38 @@ npm start
    - **Progress** → "Créer le Progress"
    - **Roadmap** → "Créer la Roadmap"
 
+### 🚀 Première session avec votre agent
+
+Une fois vos fichiers templates générés, copiez-collez ce prompt dans OpenCode pour initialiser la vision de votre projet :
+
+```markdown
+J'ai initialisé mon projet avec la structure OpenStrat :
+- Agent principal configuré dans `.opencode/agents/{nom-projet}-main.md`
+- Skills générées : `{nom-projet}-session-start` et `{nom-projet}-session-end` dans `.opencode/skills/`
+- Fichiers créés : `docs/PICTURE.md`, `progress.md`, `roadmap.md` (actuellement avec des placeholders génériques)
+
+Je veux maintenant établir la vision cible de mon projet.
+
+Voici mon projet en quelques mots : [décris ici le problème que tu veux résoudre, pour qui, et pourquoi].
+
+Peux-tu :
+
+1. **Vérifier la cohérence** de la structure que je t'indique :
+   - Confirmer que les skills référencées dans mon agent principal correspondent bien à ce que tu vois
+   - Signaler immédiatement toute incohérence de nommage
+
+2. **Me poser les 3-4 questions essentielles** pour remplir correctement le PICTURE.md (pas de stack technique pour l'instant) ?
+
+3. **Me proposer une équipe d'agents secondaires** adaptée à mon besoin ?
+
+4. **Me suggérer les skills complémentaires** dont j'aurai besoin au-delà de session-start et session-end, et les créer physiquement si on les valide ensemble ?
+
+5. **Une fois qu'on aura validé mes réponses et tes propositions**, remplir automatiquement les fichiers PICTURE.md, progress.md et roadmap.md avec le contenu réel, sans placeholders.
+   > ⚠️ Ne commence pas à écrire les fichiers avant que je te dise explicitement "Go pour l'écriture".
+
+Réponds en français, de manière concise et structurée.
+```
+
 ### Configurer le dossier racine
 
 Dans le sidebar, section "Dossier racine" :
@@ -128,7 +160,7 @@ cat /tmp/openstrat.log       # Voir les logs
 
 Les agents et skills sont **préfixés par le nom du projet** pour éviter les collisions entre projets :
 - `mon-projet-main.md` (visible uniquement depuis mon-projet)
-- `mon-projet-main.md` (visible uniquement depuis mon-projet)
+- `mon-projet-session-start` / `mon-projet-session-end` (skills scopées au projet)
 
 **Important** : OpenCode Desktop fusionne les configs globales et par projet. Pour isoler les agents, ne placez pas vos agents dans `~/.config/opencode/agents/` (global) — laissez-les dans le dossier `.opencode/agents/` de chaque projet.
 
