@@ -26,7 +26,7 @@ Le script va :
 ├── openstrat/                ← ce dashboard
 │   ├── server.js
 │   └── public/
-├── altuas/                   ← vos projets OpenCode
+├── mon-projet/                   ← vos projets OpenCode
 ├── mon-projet/
 └── autre-projet/
 ```
@@ -127,11 +127,10 @@ cat /tmp/openstrat.log       # Voir les logs
 ## 🏗 Architecture agents/skills
 
 Les agents et skills sont **préfixés par le nom du projet** pour éviter les collisions entre projets :
-- `altuas-main.md` (visible uniquement depuis altuas)
+- `mon-projet-main.md` (visible uniquement depuis mon-projet)
 - `mon-projet-main.md` (visible uniquement depuis mon-projet)
 
 **Important** : OpenCode Desktop fusionne les configs globales et par projet. Pour isoler les agents, ne placez pas vos agents dans `~/.config/opencode/agents/` (global) — laissez-les dans le dossier `.opencode/agents/` de chaque projet.
 
 ---
 
-*Logo et design inspirés de l'écosystème OpenCode.*
