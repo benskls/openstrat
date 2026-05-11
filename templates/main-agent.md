@@ -1,8 +1,13 @@
+---
+description: Agent principal de stratégie et coordination du projet {{PROJECT_NAME}}
+mode: primary
+---
+
 # {{PROJECT_NAME}} — Agent Principal
 
-> Type : {{PROJECT_TYPE}}  
-> Cible : {{TARGET_AUDIENCE}}  
-> Problème : {{KEY_PROBLEM}}  
+> Type : {{PROJECT_TYPE}}
+> Cible : {{TARGET_AUDIENCE}}
+> Problème : {{KEY_PROBLEM}}
 > Horizon : {{HORIZON}}
 
 ---
