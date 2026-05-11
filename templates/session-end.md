@@ -1,6 +1,11 @@
+---
+name: {{PROJECT_NAME}}-session-end
+description: Clôture une session de travail en notant les livrables, mettant à jour l'avancement et planifiant la suite
+---
+
 # Skill — Session End : {{PROJECT_NAME}}
 
-> Projet : {{PROJECT_NAME}}  
+> Projet : {{PROJECT_NAME}}
 > Type : {{PROJECT_TYPE}}
 
 ---
