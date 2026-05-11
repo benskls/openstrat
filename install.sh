@@ -132,7 +132,7 @@ if [[ "$SHELL" == *"zsh"* ]]; then
     SHELL_RC="$HOME/.zshrc"
 fi
 
-ALIAS_LINE="alias openstrat='cd $INSTALL_DIR && npm start'"
+ALIAS_LINE="alias openstrat=\"cd \\\"$INSTALL_DIR\\\" && npm start\""
 
 # Nettoyer les anciens alias et leurs commentaires
 if [ -f "$SHELL_RC" ]; then
