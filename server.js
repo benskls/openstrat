@@ -415,8 +415,18 @@ app.get('/api/setup/status', async (req, res) => {
     const gh = await github.checkStatus();
     const vc = await vercel.checkStatus();
     res.json({
-      github: { installed: gh.installed, authenticated: gh.authenticated, user: gh.user },
-      vercel: { installed: vc.installed, authenticated: vc.authenticated, user: vc.user },
+      github: {
+        installed: gh.installed,
+        authenticated: gh.authenticated,
+        user: gh.user,
+        instructions: gh.instructions || null
+      },
+      vercel: {
+        installed: vc.installed,
+        authenticated: vc.authenticated,
+        user: vc.user,
+        instructions: vc.instructions || null
+      },
       ready: gh.installed && gh.authenticated && vc.installed && vc.authenticated
     });
   } catch (err) {

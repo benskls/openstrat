@@ -4,7 +4,10 @@
   "description": "Dashboard de gestion d'agents et skills pour projets IA avec OpenCode",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "setup:github": "node scripts/setup-github.js",
+    "setup:vercel": "node scripts/setup-vercel.js",
+    "setup:full": "node scripts/setup-full.js"
   },
   "keywords": ["opencode", "agents", "skills", "dashboard", "ia"],
   "author": "",
