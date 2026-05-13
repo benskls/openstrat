@@ -45,6 +45,9 @@ function scanProjects() {
       const stat = fs.statSync(entryPath);
       if (!stat.isDirectory()) continue;
 
+      // Exclude the OpenStrat installation directory itself
+      if (entryPath === OPENSTRAT_DIR) continue;
+
       const opencodePath = path.join(entryPath, '.opencode');
       const hasOpencode = fs.existsSync(opencodePath);
 

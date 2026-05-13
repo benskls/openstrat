@@ -1,6 +1,11 @@
+---
+name: {{PROJECT_NAME}}-session-start
+description: Démarre une session de travail structurée sur le projet {{PROJECT_NAME}}
+---
+
 # Skill — Session Start : {{PROJECT_NAME}}
 
-> Projet : {{PROJECT_NAME}}  
+> Projet : {{PROJECT_NAME}}
 > Type : {{PROJECT_TYPE}}
 
 ---
