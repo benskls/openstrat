@@ -106,6 +106,13 @@
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
         Roadmap
       </button>
+
+      <div class="px-3 py-1.5 mt-4 text-[10px] font-semibold text-zinc-600 uppercase tracking-wider">Settings</div>
+      <button onclick="switchView('config')" id="nav-config" class="nav-item w-full text-left px-4 py-2.5 text-sm text-zinc-300 flex items-center gap-3 transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        Config
+        <span id="config-status-badge" class="ml-auto text-[10px] bg-zinc-800 text-zinc-500 px-1.5 py-0.5 rounded hidden">!</span>
+      </button>
     </nav>
 
     <!-- Root Folder -->
@@ -139,6 +146,12 @@
           <span class="font-semibold">OpenStrat</span> — Multi-project dashboard for OpenCode. 
           <a href="#" onclick="document.getElementById('welcome-banner').style.display='none'; return false;" class="text-indigo-400 hover:text-indigo-300 underline ml-2">Dismiss</a>
         </p>
+      </div>
+      <div id="update-badge" class="hidden">
+        <a href="https://github.com/benskls/openstrat" target="_blank" class="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-1 rounded border border-amber-500/30 hover:bg-amber-500/30 transition flex items-center gap-1.5">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          <span id="update-text">Mise à jour disponible</span>
+        </a>
       </div>
     </div>
 
@@ -257,6 +270,153 @@
         </div>
       </div>
     </div>
+
+    <!-- View: Config -->
+    <div id="view-config" class="view-section hidden flex-1 overflow-y-auto p-6">
+      <div class="max-w-5xl mx-auto fade-in">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h2 class="text-2xl font-bold text-white">Configuration</h2>
+            <p class="text-sm text-zinc-500 mt-1" id="config-project-label">Select a project</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <div id="config-global-status" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700">
+              <span id="config-status-dot" class="w-2 h-2 rounded-full bg-red-500"></span>
+              <span id="config-status-text" class="text-xs text-zinc-300 font-medium">Non configuré</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="mb-8">
+          <div class="flex justify-between text-xs text-zinc-500 mb-2">
+            <span>GitHub</span>
+            <span>Vercel</span>
+            <span>Environnement</span>
+          </div>
+          <div class="h-2 bg-zinc-800 rounded-full overflow-hidden">
+            <div id="config-progress-bar" class="h-full bg-indigo-500 rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+          <p class="text-xs text-zinc-600 mt-1.5" id="config-progress-text">0 sur 3 étapes configurées</p>
+        </div>
+
+        <!-- Cards Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- GitHub Card -->
+          <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 phase-card">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center">
+                  <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                </div>
+                <div>
+                  <h3 class="font-semibold text-white text-sm">GitHub</h3>
+                  <p class="text-xs text-zinc-500">Repository du projet</p>
+                </div>
+              </div>
+              <span id="github-status-icon" class="text-lg">❌</span>
+            </div>
+            <div class="space-y-3">
+              <div>
+                <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">Nom du repository (owner/repo)</label>
+                <input type="text" id="github-repo-input" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition" placeholder="monuser/mon-projet">
+              </div>
+              <div>
+                <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">URL du repository</label>
+                <input type="url" id="github-url-input" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition" placeholder="https://github.com/...">
+              </div>
+              <button onclick="saveProjectConfig('github')" class="w-full px-3 py-2 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg border border-zinc-700 transition font-medium">Enregistrer GitHub</button>
+            </div>
+          </div>
+
+          <!-- Vercel Card -->
+          <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 phase-card">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center">
+                  <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M24 22.525H0l12-21.05 12 21.05z"/></svg>
+                </div>
+                <div>
+                  <h3 class="font-semibold text-white text-sm">Vercel</h3>
+                  <p class="text-xs text-zinc-500">Déploiement &amp; preview</p>
+                </div>
+              </div>
+              <span id="vercel-status-icon" class="text-lg">❌</span>
+            </div>
+            <div class="space-y-3">
+              <div>
+                <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">URL de déploiement</label>
+                <input type="url" id="vercel-url-input" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition" placeholder="https://mon-projet.vercel.app">
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] text-zinc-500">Statut :</span>
+                <select id="vercel-status-input" class="bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-300">
+                  <option value="not_deployed">Non déployé</option>
+                  <option value="preview">Preview</option>
+                  <option value="production">Production</option>
+                </select>
+              </div>
+              <button onclick="saveProjectConfig('vercel')" class="w-full px-3 py-2 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg border border-zinc-700 transition font-medium">Enregistrer Vercel</button>
+            </div>
+          </div>
+
+          <!-- Environment Variables Card -->
+          <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 phase-card">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center">
+                  <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                </div>
+                <div>
+                  <h3 class="font-semibold text-white text-sm">Variables d'environnement</h3>
+                  <p class="text-xs text-zinc-500">Clés sensibles du projet</p>
+                </div>
+              </div>
+              <span id="env-status-icon" class="text-lg">❌</span>
+            </div>
+            <div class="space-y-3">
+              <div id="env-vars-list" class="space-y-2 max-h-40 overflow-y-auto"></div>
+              <div class="flex gap-2">
+                <input type="text" id="env-key-input" class="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition" placeholder="CLÉ_API">
+                <input type="text" id="env-value-input" class="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition" placeholder="valeur123">
+                <button onclick="addEnvVar()" class="px-3 py-2 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg border border-zinc-700 transition">+</button>
+              </div>
+              <button onclick="saveProjectConfig('env')" class="w-full px-3 py-2 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg border border-zinc-700 transition font-medium">Enregistrer les variables</button>
+            </div>
+          </div>
+
+          <!-- Auto Setup Card -->
+          <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 phase-card md:col-span-2">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-indigo-500/10 flex items-center justify-center">
+                  <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                </div>
+                <div>
+                  <h3 class="font-semibold text-white text-sm">Setup automatique</h3>
+                  <p class="text-xs text-zinc-500">Initialisation du repo Git + déploiement Vercel</p>
+                </div>
+              </div>
+              <span id="setup-status-icon" class="text-lg">❌</span>
+            </div>
+            <div class="bg-zinc-950 border border-zinc-800 rounded-lg p-4 mb-4">
+              <div class="flex items-start gap-3 text-xs text-zinc-400 leading-relaxed">
+                <svg class="w-4 h-4 text-zinc-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <p>Cette action va créer un repository GitHub (si inexistant), pousser le code, et configurer le déploiement Vercel. Nécessite un token d'accès personnel configuré côté backend.</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <button id="setup-btn" onclick="runAutoSetup()" class="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-medium transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                <span id="setup-btn-text">Lancer le setup</span>
+                <div id="setup-btn-spinner" class="spinner hidden"></div>
+              </button>
+              <span id="setup-result" class="text-xs text-zinc-500"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </main>
 
   <script>
@@ -268,6 +428,8 @@
     let skills = [];
     let currentAgent = null;
     let currentSkill = null;
+    let currentProjectConfig = {};
+    let pendingEnvVars = {};
 
     // ─── Project Management ──────────────────────────────────────────
 
@@ -446,6 +608,7 @@
       document.getElementById('skills-project-label').textContent = projectName;
       document.getElementById('picture-project-label').textContent = projectName;
       document.getElementById('progress-project-label').textContent = projectName;
+      document.getElementById('config-project-label').textContent = projectName;
 
       if (currentView === 'agents') { loadAgents(); }
       else if (currentView === 'skills') { loadSkills(); }
@@ -460,6 +623,9 @@
       else if (currentView === 'roadmap') {
         if (project?.hasRoadmap) renderRoadmap();
         else showRoadmapEmptyState();
+      }
+      else if (currentView === 'config') {
+        loadProjectConfig();
       }
     }
 
@@ -760,6 +926,196 @@
       `;
     }
 
+    // ─── Config ──────────────────────────────────────────────────────
+
+    async function loadProjectConfig() {
+      if (!currentProject) return;
+      try {
+        const res = await fetch(`/api/config/project/${encodeURIComponent(currentProject)}`);
+        if (!res.ok) throw new Error('Failed to load config');
+        const config = await res.json();
+        currentProjectConfig = config || {};
+        pendingEnvVars = { ...(currentProjectConfig.env || {}) };
+        updateConfigUI(currentProjectConfig);
+      } catch (err) {
+        console.error('Config load error:', err);
+        // Reset to empty state
+        currentProjectConfig = {};
+        pendingEnvVars = {};
+        updateConfigUI({});
+      }
+    }
+
+    function updateConfigUI(config) {
+      const github = config.github || {};
+      const vercel = config.vercel || {};
+      const env = config.env || {};
+
+      // Inputs
+      document.getElementById('github-repo-input').value = github.repo || '';
+      document.getElementById('github-url-input').value = github.url || '';
+      document.getElementById('vercel-url-input').value = vercel.url || '';
+      document.getElementById('vercel-status-input').value = vercel.status || 'not_deployed';
+
+      // Status icons
+      const githubOk = !!(github.repo && github.url);
+      const vercelOk = !!(vercel.url && vercel.status && vercel.status !== 'not_deployed');
+      const envOk = Object.keys(env).length > 0;
+      const setupOk = !!(config.setup && config.setup.completed);
+
+      document.getElementById('github-status-icon').textContent = githubOk ? '✅' : '❌';
+      document.getElementById('vercel-status-icon').textContent = vercelOk ? '✅' : '❌';
+      document.getElementById('env-status-icon').textContent = envOk ? '✅' : '❌';
+      document.getElementById('setup-status-icon').textContent = setupOk ? '✅' : '❌';
+
+      // Progress bar
+      const steps = [githubOk, vercelOk, envOk];
+      const completed = steps.filter(Boolean).length;
+      const pct = (completed / 3) * 100;
+      document.getElementById('config-progress-bar').style.width = pct + '%';
+      document.getElementById('config-progress-text').textContent = `${completed} sur 3 étapes configurées`;
+
+      // Global status
+      const allDone = completed === 3;
+      const dot = document.getElementById('config-status-dot');
+      const text = document.getElementById('config-status-text');
+      const badge = document.getElementById('config-status-badge');
+
+      if (allDone) {
+        dot.className = 'w-2 h-2 rounded-full bg-green-500';
+        text.textContent = 'Configuré';
+        badge.classList.add('hidden');
+      } else {
+        dot.className = 'w-2 h-2 rounded-full bg-yellow-500';
+        text.textContent = 'En cours';
+        badge.classList.remove('hidden');
+        badge.textContent = (3 - completed).toString();
+      }
+
+      renderEnvVars();
+    }
+
+    async function saveProjectConfig(section) {
+      if (!currentProject) return;
+      const payload = { ...currentProjectConfig };
+
+      if (section === 'github') {
+        payload.github = {
+          repo: document.getElementById('github-repo-input').value.trim(),
+          url: document.getElementById('github-url-input').value.trim()
+        };
+      } else if (section === 'vercel') {
+        payload.vercel = {
+          url: document.getElementById('vercel-url-input').value.trim(),
+          status: document.getElementById('vercel-status-input').value
+        };
+      } else if (section === 'env') {
+        payload.env = { ...pendingEnvVars };
+      }
+
+      try {
+        const res = await fetch(`/api/config/project/${encodeURIComponent(currentProject)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error('Save failed');
+        const data = await res.json();
+        currentProjectConfig = data.config || payload;
+        updateConfigUI(currentProjectConfig);
+        showToast(section.charAt(0).toUpperCase() + section.slice(1) + ' enregistré');
+      } catch (err) {
+        showToast('Erreur de sauvegarde');
+        console.error(err);
+      }
+    }
+
+    function renderEnvVars() {
+      const container = document.getElementById('env-vars-list');
+      const keys = Object.keys(pendingEnvVars);
+      if (keys.length === 0) {
+        container.innerHTML = '<div class="text-xs text-zinc-600 italic">Aucune variable définie</div>';
+        return;
+      }
+      container.innerHTML = keys.map(key => `
+        <div class="flex items-center justify-between bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2">
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="text-xs font-mono text-emerald-400 truncate">${escapeHtml(key)}</span>
+            <span class="text-xs text-zinc-600">=</span>
+            <span class="text-xs text-zinc-400 truncate">${escapeHtml(maskValue(pendingEnvVars[key]))}</span>
+          </div>
+          <button onclick="removeEnvVar('${escapeHtml(key)}')" class="ml-2 text-zinc-600 hover:text-red-400 transition text-xs shrink-0">Supprimer</button>
+        </div>
+      `).join('');
+    }
+
+    function addEnvVar() {
+      const keyInput = document.getElementById('env-key-input');
+      const valInput = document.getElementById('env-value-input');
+      const key = keyInput.value.trim();
+      const val = valInput.value.trim();
+      if (!key) { showToast('Veuillez entrer une clé'); return; }
+      pendingEnvVars[key] = val;
+      keyInput.value = '';
+      valInput.value = '';
+      renderEnvVars();
+    }
+
+    function removeEnvVar(key) {
+      delete pendingEnvVars[key];
+      renderEnvVars();
+    }
+
+    function maskValue(val) {
+      if (!val) return '';
+      if (val.length <= 4) return '****';
+      return val.slice(0, 2) + '••••••' + val.slice(-2);
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    async function runAutoSetup() {
+      if (!currentProject) return;
+      const btn = document.getElementById('setup-btn');
+      const spinner = document.getElementById('setup-btn-spinner');
+      const btnText = document.getElementById('setup-btn-text');
+      const result = document.getElementById('setup-result');
+
+      btn.disabled = true;
+      spinner.classList.remove('hidden');
+      btnText.textContent = 'Setup en cours...';
+      result.textContent = '';
+
+      try {
+        const res = await fetch('/api/setup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ projectId: currentProject })
+        });
+        const data = await res.json();
+        if (!res.ok || data.error) {
+          throw new Error(data.error || 'Setup failed');
+        }
+        showToast('Setup terminé avec succès');
+        result.textContent = data.message || 'Terminé';
+        result.className = 'text-xs text-green-400';
+        // Refresh config
+        await loadProjectConfig();
+      } catch (err) {
+        showToast('Erreur: ' + err.message);
+        result.textContent = err.message;
+        result.className = 'text-xs text-red-400';
+      } finally {
+        btn.disabled = false;
+        spinner.classList.add('hidden');
+        btnText.textContent = 'Lancer le setup';
+      }
+    }
+
     // ─── Utilities ───────────────────────────────────────────────────
 
     function updateCharCount(editorId, countId) {
@@ -797,10 +1153,30 @@
     document.getElementById('agent-editor').addEventListener('input', () => updateCharCount('agent-editor', 'agent-char-count'));
     document.getElementById('skill-editor').addEventListener('input', () => updateCharCount('skill-editor', 'skill-char-count'));
 
+    // ─── Update Checker ──────────────────────────────────────────────
+
+    async function checkForUpdates() {
+      try {
+        const res = await fetch('/api/version');
+        const data = await res.json();
+        if (data.updateAvailable) {
+          const badge = document.getElementById('update-badge');
+          const text = document.getElementById('update-text');
+          if (badge && text) {
+            text.textContent = `v${data.latest} disponible`;
+            badge.classList.remove('hidden');
+          }
+        }
+      } catch (err) {
+        // Silencieux — pas de connexion = pas de badge
+      }
+    }
+
     // ─── Init ────────────────────────────────────────────────────────
 
     loadConfig();
     loadProjects();
+    checkForUpdates();
   </script>
 
   <!-- Config Modal -->

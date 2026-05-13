@@ -10,6 +10,39 @@ read_tty() {
     read -rp "$@" < /dev/tty
 }
 
+# ─────────────────────────────────────────────────────────────
+# Fonction : vérifier si une mise à jour est disponible
+# ─────────────────────────────────────────────────────────────
+check_for_updates() {
+    local current_version="$1"
+    local install_dir="$2"
+    
+    # Vérifier si curl est disponible
+    if ! command -v curl &> /dev/null; then
+        return 0
+    fi
+    
+    # Récupérer la dernière release depuis GitHub
+    local latest_tag
+    latest_tag=$(curl -s "https://api.github.com/repos/benskls/openstrat/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+    
+    if [ -z "$latest_tag" ]; then
+        return 0
+    fi
+    
+    # Comparer les versions (simple comparaison lexicographique des tags)
+    if [ "$latest_tag" != "$current_version" ]; then
+        echo ""
+        echo "📢  Mise à jour disponible !"
+        echo "    Version installée : $current_version"
+        echo "    Dernière version  : $latest_tag"
+        echo ""
+        echo "    Pour mettre à jour :"
+        echo "    cd $install_dir && git pull origin main"
+        echo ""
+    fi
+}
+
 echo ""
 echo "╔══════════════════════════════════════════════════════════╗"
 echo "║                                                          ║"
@@ -122,36 +155,79 @@ EOF
 echo "✅  config.json créé avec parentDir : $PARENT_DIR"
 
 # ─────────────────────────────────────────────────────────────
-# 5. Créer l'alias shell
+# 5. Créer le lanceur dynamique (fonction shell)
 # ─────────────────────────────────────────────────────────────
 echo ""
-echo "🔧  Configuration de l'alias shell..."
+echo "🔧  Configuration du lanceur shell..."
 
 SHELL_RC="$HOME/.bashrc"
 if [[ "$SHELL" == *"zsh"* ]]; then
     SHELL_RC="$HOME/.zshrc"
 fi
 
-ALIAS_LINE="alias openstrat=\"cd \\\"$INSTALL_DIR\\\" && npm start\""
-
-# Nettoyer les anciens alias et leurs commentaires
+# Nettoyer les anciennes configurations OpenStrat
 if [ -f "$SHELL_RC" ]; then
-    sed -i '' '/# OpenStrat Dashboard/d' "$SHELL_RC" 2>/dev/null || sed -i '/# OpenStrat Dashboard/d' "$SHELL_RC"
+    # Supprimer anciens alias et fonctions
+    sed -i '' '/# OpenStrat/d' "$SHELL_RC" 2>/dev/null || sed -i '/# OpenStrat/d' "$SHELL_RC"
     sed -i '' '/alias openstrat=/d' "$SHELL_RC" 2>/dev/null || sed -i '/alias openstrat=/d' "$SHELL_RC"
+    sed -i '' '/^openstrat()/,/^}/d' "$SHELL_RC" 2>/dev/null || sed -i '/^openstrat()/,/^}/d' "$SHELL_RC"
 fi
 
-# Ajouter le nouvel alias
-{
-    echo ""
-    echo "# OpenStrat Dashboard"
-    echo "$ALIAS_LINE"
-} >> "$SHELL_RC"
+# Créer le fichier de chemin
+OPENSTRAT_PATH_FILE="$HOME/.openstrat-path"
+echo "$INSTALL_DIR" > "$OPENSTRAT_PATH_FILE"
 
-echo "✅  Alias ajouté dans $SHELL_RC"
+# Ajouter la fonction shell
+cat >> "$SHELL_RC" <<'LAUNCHER_EOF'
+
+# OpenStrat — Lanceur dynamique
+# Ce lanceur lit le chemin d'installation depuis ~/.openstrat-path
+# Pour mettre à jour : réinstallez OpenStrat ou modifiez ~/.openstrat-path
+openstrat() {
+    local install_dir
+    if [ -f "$HOME/.openstrat-path" ]; then
+        install_dir=$(cat "$HOME/.openstrat-path")
+    fi
+    
+    if [ -z "$install_dir" ] || [ ! -f "$install_dir/server.js" ]; then
+        echo "❌  OpenStrat introuvable à : $install_dir"
+        echo "    Veuillez réinstaller OpenStrat ou mettre à jour ~/.openstrat-path"
+        return 1
+    fi
+    
+    # Vérifier les mises à jour (silencieux)
+    if command -v curl &> /dev/null; then
+        local latest_tag
+        latest_tag=$(curl -s "https://api.github.com/repos/benskls/openstrat/releases/latest" 2>/dev/null | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+        if [ -n "$latest_tag" ]; then
+            local current_tag
+            if [ -f "$install_dir/package.json" ]; then
+                current_tag=$(grep '"version"' "$install_dir/package.json" | sed -E 's/.*"([^"]+)".*/\1/')
+                if [ "$latest_tag" != "v$current_tag" ] && [ "$latest_tag" != "$current_tag" ]; then
+                    echo "📢  Mise à jour disponible : $latest_tag (vous avez : $current_tag)"
+                    echo "    Pour mettre à jour : cd $install_dir && git pull origin main"
+                    echo ""
+                fi
+            fi
+        fi
+    fi
+    
+    cd "$install_dir" && npm start
+}
+LAUNCHER_EOF
+
+echo "✅  Lanceur ajouté dans $SHELL_RC"
+echo "   Chemin d'installation stocké dans : ~/.openstrat-path"
 echo "   Pour l'utiliser immédiatement, exécutez : source $SHELL_RC"
 
 # ─────────────────────────────────────────────────────────────
-# 6. Proposer de lancer immédiatement
+# 6. Vérifier les mises à jour
+# ─────────────────────────────────────────────────────────────
+CURRENT_VERSION=$(grep '"version"' package.json | sed -E 's/.*"([^"]+)".*/\1/')
+check_for_updates "$CURRENT_VERSION" "$INSTALL_DIR"
+
+# ─────────────────────────────────────────────────────────────
+# 7. Proposer de lancer immédiatement
 # ─────────────────────────────────────────────────────────────
 echo ""
 
@@ -177,7 +253,7 @@ else
 fi
 
 # ─────────────────────────────────────────────────────────────
-# 7. Instructions finales
+# 8. Instructions finales
 # ─────────────────────────────────────────────────────────────
 echo ""
 echo "╔══════════════════════════════════════════════════════════╗"
@@ -186,6 +262,7 @@ echo "║   ✅  OpenStrat est prêt !                                ║"
 echo "║                                                          ║"
 echo "║   Dashboard : http://localhost:3456                      ║"
 echo "║   Dossier racine : $PARENT_DIR                           ║"
+echo "║   Installation : $INSTALL_DIR                            ║"
 echo "║                                                          ║"
 echo "║   Commandes utiles :                                     ║"
 echo "║     openstrat              → relancer le dashboard       ║"
@@ -202,4 +279,4 @@ echo "╚═══════════════════════�
 echo ""
 
 echo ""
-echo "💡  Astuce : l'alias 'openstrat' est disponible dans un nouveau terminal"
+echo "💡  Astuce : la fonction 'openstrat' est disponible dans un nouveau terminal"
