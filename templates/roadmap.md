@@ -72,6 +72,6 @@
 ## 5. Règles de Mise à Jour
 
 1. **Fréquence** : Révision formelle à chaque `session-end` stratégique (mensuelle minimum).
-2. **Responsable** : L'agent principal `@main-{{PROJECT_SLUG}}`.
+2. **Responsable** : L'agent principal `@{{PROJECT_SLUG}}-main`.
 3. **Validation** : Tout glissement de plus de 2 semaines d'un jalon critique doit être signalé à l'utilisateur.
 4. **Archivage** : Les versions précédentes de la roadmap sont conservées dans l'historique Git du projet.
