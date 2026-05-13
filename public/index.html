@@ -400,10 +400,22 @@
               </div>
               <span id="setup-status-icon" class="text-lg">❌</span>
             </div>
+
+            <!-- Prérequis CLI -->
+            <div id="setup-prerequisites" class="space-y-3 mb-4">
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-zinc-500">Vérification des outils...</span>
+                <button onclick="checkSetupPrerequisites()" class="text-xs text-indigo-400 hover:text-indigo-300 underline">Vérifier</button>
+              </div>
+              <div id="setup-cli-status" class="hidden">
+                <!-- Contenu injecté par JS -->
+              </div>
+            </div>
+
             <div class="bg-zinc-950 border border-zinc-800 rounded-lg p-4 mb-4">
               <div class="flex items-start gap-3 text-xs text-zinc-400 leading-relaxed">
                 <svg class="w-4 h-4 text-zinc-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                <p>Cette action va créer un repository GitHub (si inexistant), pousser le code, et configurer le déploiement Vercel. Nécessite un token d'accès personnel configuré côté backend.</p>
+                <p>Cette action va créer un repository GitHub (si inexistant), pousser le code, et configurer le déploiement Vercel. Nécessite les CLI GitHub et Vercel installées et authentifiées.</p>
               </div>
             </div>
             <div class="flex items-center gap-3">
@@ -944,6 +956,8 @@
         pendingEnvVars = {};
         updateConfigUI({});
       }
+      // Vérifier les prérequis CLI
+      await checkSetupPrerequisites();
     }
 
     function updateConfigUI(config) {
@@ -1076,6 +1090,69 @@
       const div = document.createElement('div');
       div.textContent = text;
       return div.innerHTML;
+    }
+
+    async function checkSetupPrerequisites() {
+      const statusDiv = document.getElementById('setup-cli-status');
+      const btn = document.getElementById('setup-btn');
+      statusDiv.classList.remove('hidden');
+      statusDiv.innerHTML = '<div class="flex items-center gap-2 text-xs text-zinc-400"><div class="spinner"></div> Vérification...</div>';
+
+      try {
+        const res = await fetch('/api/setup/status');
+        const data = await res.json();
+
+        let html = '';
+        let allReady = true;
+
+        // GitHub status
+        if (data.github.installed && data.github.authenticated) {
+          html += `<div class="flex items-center gap-2 text-xs text-green-400 mb-2"><span>✅</span> <span>GitHub CLI connecté (${data.github.user})</span></div>`;
+        } else {
+          allReady = false;
+          html += `<div class="bg-zinc-950 border border-zinc-800 rounded-lg p-3 mb-2">`;
+          html += `<div class="flex items-center gap-2 text-xs text-amber-400 mb-2"><span>⚠️</span> <span class="font-medium">${data.github.error || 'GitHub CLI non configuré'}</span></div>`;
+          if (data.github.instructions) {
+            html += `<div class="space-y-1">`;
+            data.github.instructions.instructions.forEach(step => {
+              html += `<div class="text-xs text-zinc-400 font-mono bg-zinc-900 rounded px-2 py-1">${escapeHtml(step)}</div>`;
+            });
+            html += `</div>`;
+            html += `<a href="${data.github.instructions.docsUrl}" target="_blank" class="text-[10px] text-indigo-400 hover:text-indigo-300 underline mt-2 inline-block">Documentation →</a>`;
+          }
+          html += `</div>`;
+        }
+
+        // Vercel status
+        if (data.vercel.installed && data.vercel.authenticated) {
+          html += `<div class="flex items-center gap-2 text-xs text-green-400 mb-2"><span>✅</span> <span>Vercel CLI connecté (${data.vercel.user})</span></div>`;
+        } else {
+          allReady = false;
+          html += `<div class="bg-zinc-950 border border-zinc-800 rounded-lg p-3 mb-2">`;
+          html += `<div class="flex items-center gap-2 text-xs text-amber-400 mb-2"><span>⚠️</span> <span class="font-medium">${data.vercel.error || 'Vercel CLI non configuré'}</span></div>`;
+          if (data.vercel.instructions) {
+            html += `<div class="space-y-1">`;
+            data.vercel.instructions.instructions.forEach(step => {
+              html += `<div class="text-xs text-zinc-400 font-mono bg-zinc-900 rounded px-2 py-1">${escapeHtml(step)}</div>`;
+            });
+            html += `</div>`;
+            html += `<a href="${data.vercel.instructions.docsUrl}" target="_blank" class="text-[10px] text-indigo-400 hover:text-indigo-300 underline mt-2 inline-block">Documentation →</a>`;
+          }
+          html += `</div>`;
+        }
+
+        if (allReady) {
+          html += `<div class="flex items-center gap-2 text-xs text-green-400 mt-2"><span>🎉</span> <span>Tout est prêt ! Vous pouvez lancer le setup.</span></div>`;
+          btn.disabled = false;
+        } else {
+          btn.disabled = true;
+          html += `<div class="text-xs text-zinc-500 mt-2">Installez et connectez les outils ci-dessus, puis cliquez "Vérifier" à nouveau.</div>`;
+        }
+
+        statusDiv.innerHTML = html;
+      } catch (err) {
+        statusDiv.innerHTML = `<div class="text-xs text-red-400">Erreur de vérification : ${escapeHtml(err.message)}</div>`;
+      }
     }
 
     async function runAutoSetup() {
