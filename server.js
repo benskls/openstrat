@@ -2,6 +2,9 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+const github = require('./lib/github');
+const vercel = require('./lib/vercel');
+const orchestrator = require('./lib/orchestrator');
 
 const app = express();
 const PORT = process.env.PORT || 3456;
@@ -12,14 +15,16 @@ const CONFIG_PATH = path.join(OPENSTRAT_DIR, 'config.json');
 function loadConfig() {
   try {
     if (fs.existsSync(CONFIG_PATH)) {
-      return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+      const data = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+      if (!data.projectConfig) data.projectConfig = {};
+      return data;
     }
   } catch (e) { console.error('Config load error:', e.message); }
-  return { parentDir: null };
+  return { parentDir: null, projectConfig: {} };
 }
 
-function saveConfig(config) {
-  fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2), 'utf8');
+function saveConfig(cfg) {
+  fs.writeFileSync(CONFIG_PATH, JSON.stringify(cfg, null, 2), 'utf8');
 }
 
 let config = loadConfig();
@@ -44,9 +49,6 @@ function scanProjects() {
       const entryPath = path.join(PARENT_DIR, entry);
       const stat = fs.statSync(entryPath);
       if (!stat.isDirectory()) continue;
-
-      // Exclude the OpenStrat installation directory itself
-      if (entryPath === OPENSTRAT_DIR) continue;
 
       const opencodePath = path.join(entryPath, '.opencode');
       const hasOpencode = fs.existsSync(opencodePath);
@@ -130,10 +132,59 @@ app.post('/api/config', (req, res) => {
   if (!fs.existsSync(resolved) || !fs.statSync(resolved).isDirectory()) {
     return res.status(400).json({ error: 'Directory does not exist' });
   }
-  config = { parentDir: resolved };
+  config.parentDir = resolved;
+  if (!config.projectConfig) config.projectConfig = {};
   saveConfig(config);
   PARENT_DIR = resolved;
   res.json({ success: true, parentDir: resolved });
+});
+
+// ─── PROJECT CONFIG ────────────────────────────────────────────────
+
+app.get('/api/config/project/:projectId', (req, res) => {
+  const { projectId } = req.params;
+  const pc = (config.projectConfig && config.projectConfig[projectId]) || {};
+  res.json(pc);
+});
+
+app.post('/api/config/project/:projectId', (req, res) => {
+  const { projectId } = req.params;
+  if (!projectId) {
+    return res.status(400).json({ error: 'Missing projectId' });
+  }
+  if (!config.projectConfig) config.projectConfig = {};
+  config.projectConfig[projectId] = req.body;
+  saveConfig(config);
+  res.json({ success: true, config: config.projectConfig[projectId] });
+});
+
+// ─── AUTO SETUP ────────────────────────────────────────────────────
+
+app.post('/api/setup', (req, res) => {
+  const { projectId } = req.body;
+  if (!projectId) {
+    return res.status(400).json({ error: 'Missing projectId' });
+  }
+
+  const paths = getProjectPaths(projectId);
+  if (!paths) return res.status(404).json({ error: 'Project not found' });
+
+  // Stub: in a real implementation, this would call GitHub/Vercel APIs
+  // For now, we mark setup as completed in config and return a helpful message
+  if (!config.projectConfig) config.projectConfig = {};
+  if (!config.projectConfig[projectId]) config.projectConfig[projectId] = {};
+  config.projectConfig[projectId].setup = {
+    completed: true,
+    date: new Date().toISOString(),
+    note: 'Stub implementation — replace with real GitHub/Vercel API calls'
+  };
+  saveConfig(config);
+
+  res.json({
+    success: true,
+    message: 'Setup automatique terminé (mode simulation). Implémentez l\'intégration réelle GitHub/Vercel côté backend.',
+    projectId
+  });
 });
 
 // ─── AGENTS ────────────────────────────────────────────────────────
@@ -351,6 +402,196 @@ app.post('/api/generate-file', (req, res) => {
   }
 
   res.json({ success: true, created });
+});
+
+// ─── SETUP GITHUB + VERCEL ─────────────────────────────────────────
+
+/**
+ * GET /api/setup/status
+ * Vérifie que gh et vercel sont installés et authentifiés.
+ */
+app.get('/api/setup/status', async (req, res) => {
+  try {
+    const gh = await github.checkStatus();
+    const vc = await vercel.checkStatus();
+    res.json({
+      github: { installed: gh.installed, authenticated: gh.authenticated, user: gh.user },
+      vercel: { installed: vc.installed, authenticated: vc.authenticated, user: vc.user },
+      ready: gh.installed && gh.authenticated && vc.installed && vc.authenticated
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/setup/github
+ * Crée un repo GitHub et pousse le code initial.
+ * Body: { projectId, repoName?, isPrivate? }
+ */
+app.post('/api/setup/github', async (req, res) => {
+  const { projectId, repoName, isPrivate = true } = req.body;
+  if (!projectId) return res.status(400).json({ error: 'Missing projectId' });
+
+  const paths = getProjectPaths(projectId);
+  if (!paths) return res.status(404).json({ error: 'Project not found' });
+
+  const logs = [];
+  const result = await orchestrator.setupGithubOnly(paths.root, {
+    repoName: repoName || projectId,
+    isPrivate,
+    onLog: (line) => logs.push(line)
+  });
+
+  res.json({ ...result, logs });
+});
+
+/**
+ * POST /api/setup/vercel
+ * Déploie le projet sur Vercel.
+ * Body: { projectId }
+ */
+app.post('/api/setup/vercel', async (req, res) => {
+  const { projectId } = req.body;
+  if (!projectId) return res.status(400).json({ error: 'Missing projectId' });
+
+  const paths = getProjectPaths(projectId);
+  if (!paths) return res.status(404).json({ error: 'Project not found' });
+
+  const logs = [];
+  const result = await orchestrator.setupVercelOnly(paths.root, (line) => logs.push(line));
+
+  res.json({ ...result, logs });
+});
+
+/**
+ * POST /api/setup/full
+ * Workflow complet GitHub + Vercel.
+ * Body: { projectId, repoName?, isPrivate? }
+ * Supporte SSE (Server-Sent Events) si header Accept: text/event-stream
+ */
+app.post('/api/setup/full', async (req, res) => {
+  const { projectId, repoName, isPrivate = true } = req.body;
+  if (!projectId) return res.status(400).json({ error: 'Missing projectId' });
+
+  const paths = getProjectPaths(projectId);
+  if (!paths) return res.status(404).json({ error: 'Project not found' });
+
+  const accept = req.headers.accept || '';
+  const useSSE = accept.includes('text/event-stream');
+
+  if (useSSE) {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    const send = (data) => res.write(`data: ${JSON.stringify(data)}\n\n`);
+    send({ type: 'start', message: 'Setup started' });
+
+    const result = await orchestrator.fullSetup(paths.root, {
+      repoName: repoName || projectId,
+      isPrivate,
+      onLog: (line) => send({ type: 'log', message: line })
+    });
+
+    send({ type: 'end', ...result });
+    res.end();
+  } else {
+    const logs = [];
+    const result = await orchestrator.fullSetup(paths.root, {
+      repoName: repoName || projectId,
+      isPrivate,
+      onLog: (line) => logs.push(line)
+    });
+    res.json({ ...result, logs });
+  }
+});
+
+/**
+ * GET /api/setup/vercel-url?project=<id>
+ * Retourne l'URL de déploiement Vercel d'un projet.
+ */
+app.get('/api/setup/vercel-url', async (req, res) => {
+  const projectId = req.query.project;
+  if (!projectId) return res.status(400).json({ error: 'Missing project parameter' });
+
+  const paths = getProjectPaths(projectId);
+  if (!paths) return res.status(404).json({ error: 'Project not found' });
+
+  try {
+    const urls = await vercel.getDeploymentUrl(paths.root);
+    res.json({ success: true, ...urls });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/setup/github-url?project=<id>
+ * Retourne l'URL du remote GitHub d'un projet.
+ */
+app.get('/api/setup/github-url', async (req, res) => {
+  const projectId = req.query.project;
+  if (!projectId) return res.status(400).json({ error: 'Missing project parameter' });
+
+  const paths = getProjectPaths(projectId);
+  if (!paths) return res.status(404).json({ error: 'Project not found' });
+
+  try {
+    const url = await github.getRepoUrl(paths.root);
+    res.json({ success: true, repoUrl: url });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── VERSION & UPDATE CHECK ────────────────────────────────────────
+
+const PACKAGE_JSON = require('./package.json');
+const CURRENT_VERSION = PACKAGE_JSON.version;
+
+app.get('/api/version', async (req, res) => {
+  const result = {
+    current: CURRENT_VERSION,
+    latest: null,
+    updateAvailable: false,
+    repoUrl: 'https://github.com/benskls/openstrat'
+  };
+  
+  try {
+    const https = require('https');
+    const options = {
+      hostname: 'api.github.com',
+      path: '/repos/benskls/openstrat/releases/latest',
+      headers: { 'User-Agent': 'OpenStrat-Dashboard' }
+    };
+    
+    const latest = await new Promise((resolve, reject) => {
+      https.get(options, (response) => {
+        let data = '';
+        response.on('data', chunk => data += chunk);
+        response.on('end', () => {
+          try {
+            const json = JSON.parse(data);
+            resolve(json.tag_name || null);
+          } catch (e) {
+            resolve(null);
+          }
+        });
+      }).on('error', () => resolve(null));
+    });
+    
+    if (latest) {
+      result.latest = latest;
+      // Comparaison simple : si latest ne commence pas par v + current
+      const normalizedLatest = latest.startsWith('v') ? latest.substring(1) : latest;
+      result.updateAvailable = normalizedLatest !== CURRENT_VERSION;
+    }
+  } catch (err) {
+    // Silencieux — pas de connexion = pas de mise à jour affichée
+  }
+  
+  res.json(result);
 });
 
 // ─── Server Start ──────────────────────────────────────────────────
