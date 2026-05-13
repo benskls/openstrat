@@ -34,7 +34,7 @@
 
 | ID | Chantier | Priorité | Statut | Responsable | Prochaine étape |
 |----|----------|----------|--------|-------------|-----------------|
-| C01 | Setup technique | P0 | 🟡 | @backend-{{PROJECT_SLUG}} | Choix de la stack |
+| C01 | Setup technique | P0 | 🟡 | @{{PROJECT_SLUG}}-backend | Choix de la stack |
 | C02 | MVP Core | P0 | 🔵 | @main-{{PROJECT_SLUG}} | Spécifications |
 
 ---
