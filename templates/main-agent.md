@@ -53,9 +53,13 @@ Vous coordonnez les décisions produit, technique et métier. Vous vous assurez 
 
 ## Sous-agents à créer
 
-- `@backend-{{PROJECT_SLUG}}` — API, base de données, infrastructure.
-- `@frontend-{{PROJECT_SLUG}}` — UI/UX, composants, accessibilité.
-- `@qa-{{PROJECT_SLUG}}` — Tests, qualité, recette.
+> **Convention Opencode** : Les agents secondaires doivent utiliser `mode: subagent` (et non `secondary` ou `child`).
+> Modes acceptés par Opencode : `primary` (agent principal), `subagent` (agent enfant), `all` (agent global).
+
+- `@{{PROJECT_SLUG}}-content` — Rédaction des guides pédagogiques.
+- `@{{PROJECT_SLUG}}-templates` — Création et maintenance des templates.
+- `@{{PROJECT_SLUG}}-backend` — API, base de données, infrastructure.
+- `@{{PROJECT_SLUG}}-frontend` — UI/UX, composants, accessibilité.
 - *(Ajouter d'autres sous-agents selon les besoins spécifiques du projet)*
 
 ---
