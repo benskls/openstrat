@@ -25,13 +25,32 @@ echo "╚═══════════════════════�
 echo ""
 
 # ─────────────────────────────────────────────────────────────
-# 1. Détecter le dossier openstrat
+# 0. Accepter le chemin en argument (optionnel)
 # ─────────────────────────────────────────────────────────────
 
-echo "🔍  Détection de l'installation OpenStrat..."
+if [ -n "$1" ]; then
+    USER_ARG_PATH="$1"
+    # Enlever les éventuels guillemets
+    USER_ARG_PATH=$(echo "$USER_ARG_PATH" | sed 's/^["'"'"']*//;s/["'"'"']*$//')
+    if [ -f "$USER_ARG_PATH/server.js" ]; then
+        OPENSTRAT_DIR="$USER_ARG_PATH"
+        echo "📁  Chemin fourni en argument : $OPENSTRAT_DIR"
+    elif [ -f "$USER_ARG_PATH/openstrat/server.js" ]; then
+        OPENSTRAT_DIR="$USER_ARG_PATH/openstrat"
+        echo "📁  Chemin détecté (avec sous-dossier openstrat) : $OPENSTRAT_DIR"
+    fi
+fi
+
+# ─────────────────────────────────────────────────────────────
+# 1. Détecter le dossier openstrat (si pas fourni en argument)
+# ─────────────────────────────────────────────────────────────
+
+if [ -z "$OPENSTRAT_DIR" ]; then
+    echo "🔍  Détection de l'installation OpenStrat..."
+fi
 
 # Méthode 1 : via ~/.openstrat-path (créé par la nouvelle version)
-OPENSTRAT_DIR=""
+OPENSTRAT_DIR=${OPENSTRAT_DIR:-""}
 if [ -f "$HOME/.openstrat-path" ]; then
     OPENSTRAT_DIR=$(cat "$HOME/.openstrat-path")
 fi
@@ -41,11 +60,19 @@ if [ -z "$OPENSTRAT_DIR" ] || [ ! -d "$OPENSTRAT_DIR" ]; then
     # Chercher dans .zshrc ou .bashrc
     for RC_FILE in "$HOME/.zshrc" "$HOME/.bashrc" "$HOME/.bash_profile"; do
         if [ -f "$RC_FILE" ]; then
-            ALIAS_PATH=$(grep 'alias openstrat=' "$RC_FILE" 2>/dev/null | sed -E 's/.*cd "([^"]+)".*/\1/' | sed -E "s/.*cd '([^']+)'.*/\1/" | head -1)
-            if [ -n "$ALIAS_PATH" ] && [ -d "$ALIAS_PATH" ]; then
-                OPENSTRAT_DIR="$ALIAS_PATH"
-                echo "    ✅ Trouvé via l'alias ($RC_FILE)"
-                break
+            # Extraire le chemin de l'alias (gère les espaces et guillemets simples/doubles)
+            ALIAS_LINE=$(grep 'alias openstrat=' "$RC_FILE" 2>/dev/null | head -1)
+            if [ -n "$ALIAS_LINE" ]; then
+                # Extraire le chemin entre cd et &&
+                ALIAS_PATH=$(echo "$ALIAS_LINE" | sed -n 's/.*cd "\(.*\)" *&&.*/\1/p')
+                if [ -z "$ALIAS_PATH" ]; then
+                    ALIAS_PATH=$(echo "$ALIAS_LINE" | sed -n "s/.*cd '\(.*\)' *&&.*/\1/p")
+                fi
+                if [ -n "$ALIAS_PATH" ] && [ -d "$ALIAS_PATH" ] && [ -f "$ALIAS_PATH/server.js" ]; then
+                    OPENSTRAT_DIR="$ALIAS_PATH"
+                    echo "    ✅ Trouvé via l'alias ($RC_FILE)"
+                    break
+                fi
             fi
         fi
     done
@@ -85,11 +112,27 @@ if [ -z "$OPENSTRAT_DIR" ] || [ ! -d "$OPENSTRAT_DIR" ]; then
     echo "    Où est installé OpenStrat sur votre ordinateur ?"
     echo "    (le dossier qui contient server.js, public/, etc.)"
     echo ""
-    read -rp "    Chemin absolu : " MANUAL_PATH
+    echo "    💡 Astuce : vous pouvez copier le dossier depuis Finder"
+    echo "       Clic droit → Option → Copier le chemin d'accès"
+    echo ""
+    read -rp "    Collez le chemin complet ici : " MANUAL_PATH
+    
+    # Enlever les éventuels guillemets ou espaces en début/fin
+    MANUAL_PATH=$(echo "$MANUAL_PATH" | sed 's/^["'"'"']*//;s/["'"'"']*$//' | sed 's/^ *//;s/ *$//')
     
     if [ -z "$MANUAL_PATH" ] || [ ! -f "$MANUAL_PATH/server.js" ]; then
         echo ""
         echo "❌  Chemin invalide ou server.js non trouvé."
+        echo "    Chemin testé : '$MANUAL_PATH'"
+        echo ""
+        echo "    Vérifiez que le chemin contient bien les fichiers :"
+        echo "    - server.js"
+        echo "    - public/"
+        echo "    - package.json"
+        echo ""
+        echo "    Exemple de chemin valide :"
+        echo "    /Users/votrenom/Desktop/Mes projets IA/Listabiere/openstrat"
+        echo ""
         echo "    Abandon."
         exit 1
     fi
@@ -304,6 +347,6 @@ echo "💾  Backup créé dans : $BACKUP_DIR"
 echo "    (au cas où vous voudriez restaurer quelque chose)"
 echo ""
 echo "🆘  En cas de problème :"
-echo "    - Restaurez le backup : cp $BACKUP_DIR/config.json $OPENSTRAT_DIR/"
+echo "    - Restaurez le backup : cp \"$BACKUP_DIR/config.json\" \"$OPENSTRAT_DIR/\""
 echo "    - Signalez un bug : https://github.com/benskls/openstrat/issues"
 echo ""
