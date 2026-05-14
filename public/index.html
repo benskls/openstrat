@@ -1119,18 +1119,23 @@
           .replace(/\n/g, '&#10;')
           .replace(/\r/g, '&#13;');
         return `
-          <div class="flex items-center justify-between gap-2 text-xs text-zinc-300 font-mono bg-zinc-900 rounded px-2 py-1.5 border border-zinc-800">
-            <span class="truncate">${cmd}</span>
-            <button data-copy="${encoded}" onclick="copyToClipboard(this.dataset.copy, this)" class="shrink-0 text-zinc-500 hover:text-white transition" title="Copier">
+          <div class="flex items-start gap-2 text-xs text-zinc-200 font-mono bg-zinc-950 rounded px-3 py-2 border border-zinc-800/80 shadow-sm">
+            <span class="truncate leading-relaxed pt-0.5">${cmd}</span>
+            <button data-copy="${encoded}" onclick="copyToClipboard(this.dataset.copy, this)" class="shrink-0 mt-0.5 p-1 rounded hover:bg-zinc-800 text-zinc-500 hover:text-white transition" title="Copier">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
             </button>
           </div>
         `;
       }
       if (step.note) {
-        return `<div class="text-xs text-zinc-400 px-1 py-0.5 leading-relaxed">${escapeHtml(step.note)}</div>`;
+        return `
+          <div class="flex items-start gap-2 text-xs text-zinc-300 bg-indigo-950/30 border border-indigo-900/40 rounded px-3 py-2">
+            <span class="shrink-0 text-indigo-400 mt-0.5">ℹ️</span>
+            <span class="leading-relaxed">${escapeHtml(step.note)}</span>
+          </div>
+        `;
       }
-      return `<div class="text-xs text-zinc-400 px-1 py-0.5">${escapeHtml(step.text)}</div>`;
+      return `<div class="text-xs text-zinc-400 px-1 py-0.5 flex items-center gap-1.5"><span class="text-zinc-600">➜</span> <span>${escapeHtml(step.text)}</span></div>`;
     }
 
     async function checkSetupPrerequisites() {
