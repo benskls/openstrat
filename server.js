@@ -5,6 +5,7 @@ const path = require('path');
 const github = require('./lib/github');
 const vercel = require('./lib/vercel');
 const orchestrator = require('./lib/orchestrator');
+const setupUtils = require('./lib/setup-utils');
 
 const app = express();
 const PORT = process.env.PORT || 3456;
@@ -414,6 +415,7 @@ app.get('/api/setup/status', async (req, res) => {
   try {
     const gh = await github.checkStatus();
     const vc = await vercel.checkStatus();
+    const gitInstalled = await setupUtils.checkCommand('git');
     res.json({
       github: {
         installed: gh.installed,
@@ -427,7 +429,11 @@ app.get('/api/setup/status', async (req, res) => {
         user: vc.user,
         instructions: vc.instructions || null
       },
-      ready: gh.installed && gh.authenticated && vc.installed && vc.authenticated
+      git: {
+        installed: gitInstalled,
+        instructions: gitInstalled ? null : await setupUtils.getInstallInstructions('git')
+      },
+      ready: gh.installed && gh.authenticated && vc.installed && vc.authenticated && gitInstalled
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
