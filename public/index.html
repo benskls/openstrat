@@ -1042,26 +1042,14 @@
             // État 2 : Installé mais pas connecté
             const vcLink = document.getElementById('config-vercel-url');
             if (vcLink) vcLink.classList.add('hidden');
-            if (vcSubtitle) vcSubtitle.textContent = 'Vercel CLI non connecté';
+            if (vcSubtitle) vcSubtitle.textContent = '✅ CLI installé — Prochaine étape : connexion';
             if (vcStatus) vcStatus.textContent = '⚠️';
-            if (vcDesc) vcDesc.textContent = 'Connectez-vous pour voir votre déploiement.';
+            if (vcDesc) vcDesc.textContent = 'Vous êtes presque prêt ! Connectez-vous pour finaliser.';
             if (vcContent) {
-              // Afficher les instructions de connexion si disponibles
+              // Afficher uniquement l'étape de connexion
               let instructionsHtml = '<div class="space-y-1.5 mt-2">';
-              if (vercel.instructions && vercel.instructions.steps) {
-                vercel.instructions.steps.forEach(step => {
-                  instructionsHtml += renderStep(step);
-                });
-              } else {
-                // Fallback: instructions manuelles avec boutons copier
-                const steps = [
-                  { text: 'Connectez-vous à Vercel', command: 'vercel login' },
-                  { text: 'Revenez ici et cliquez "Vérifier"' }
-                ];
-                steps.forEach(step => {
-                  instructionsHtml += renderStep(step);
-                });
-              }
+              instructionsHtml += renderStep({ text: '👉 Connectez-vous à Vercel', command: 'vercel login' });
+              instructionsHtml += renderStep({ text: 'Puis rechargez cette page (F5)' });
               instructionsHtml += '</div>';
               vcContent.innerHTML = instructionsHtml;
             }
@@ -1069,9 +1057,9 @@
             // État 3 : Pas installé
             const vcLink = document.getElementById('config-vercel-url');
             if (vcLink) vcLink.classList.add('hidden');
-            if (vcSubtitle) vcSubtitle.textContent = 'Vercel CLI non installé';
-            if (vcStatus) vcStatus.textContent = '❌';
-            if (vcDesc) vcDesc.textContent = 'Installez la CLI pour déployer sur Vercel.';
+            if (vcSubtitle) vcSubtitle.textContent = '❌ Vercel CLI non installé';
+            if (vcStatus) vcStatus.textContent = '';
+            if (vcDesc) vcDesc.textContent = 'Étape 1/2 : Installez la CLI ci-dessous.';
             if (vcContent) {
               // Mêmes instructions que le wizard avec boutons copier + note sudo
               const steps = [
