@@ -1081,14 +1081,25 @@
             if (vcLink) vcLink.classList.add('hidden');
             if (vcSubtitle) vcSubtitle.textContent = '✅ Connecté à Vercel';
             if (vcStatus) vcStatus.textContent = '👤';
-            if (vcDesc) vcDesc.textContent = 'Prêt au déploiement. Cliquez sur "Vérifier les prérequis" pour lancer.';
+            if (vcDesc) vcDesc.textContent = 'Prêt au déploiement.';
+            if (vcContent) {
+              vcContent.innerHTML = `
+                <div class="mt-3">
+                  <button onclick="deployToVercel()" id="vercel-deploy-btn" class="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white font-medium transition flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    <span id="vercel-deploy-text">Déployer sur Vercel</span>
+                    <div id="vercel-deploy-spinner" class="spinner hidden"></div>
+                  </button>
+                </div>
+              `;
+            }
           } else {
             // État 5 : On ne sait rien (ne devrait pas arriver)
             const vcLink = document.getElementById('config-vercel-url');
             if (vcLink) vcLink.classList.add('hidden');
             if (vcSubtitle) vcSubtitle.textContent = 'Vercel';
             if (vcStatus) vcStatus.textContent = '❓';
-            if (vcDesc) vcDesc.textContent = 'Cliquez sur "Vérifier les prérequis" pour actualiser.';
+            if (vcDesc) vcDesc.textContent = 'État inconnu. Rechargez la page pour actualiser.';
           }
         }
       } else {
@@ -1098,6 +1109,47 @@
       }
 
       renderEnvVars();
+    }
+
+    async function deployToVercel() {
+      if (!currentProject) return;
+      const btn = document.getElementById('vercel-deploy-btn');
+      const spinner = document.getElementById('vercel-deploy-spinner');
+      const text = document.getElementById('vercel-deploy-text');
+      if (!btn) return;
+
+      btn.disabled = true;
+      if (spinner) spinner.classList.remove('hidden');
+      if (text) text.textContent = 'Déploiement...';
+
+      try {
+        const res = await fetch('/api/setup/vercel', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ projectId: currentProject })
+        });
+        const data = await res.json();
+        if (!res.ok || data.error) {
+          throw new Error(data.error || 'Déploiement échoué');
+        }
+        showToast('Déployé sur Vercel !');
+        // Mettre à jour la config avec l'URL
+        currentProjectConfig.vercel = currentProjectConfig.vercel || {};
+        currentProjectConfig.vercel.url = data.deploymentUrl || data.vercelUrl;
+        currentProjectConfig.vercel.status = 'deployed';
+        await fetch(`/api/config/project/${encodeURIComponent(currentProject)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(currentProjectConfig)
+        });
+        updateConfigUI(currentProjectConfig);
+      } catch (err) {
+        showToast('Erreur: ' + err.message);
+        if (text) text.textContent = 'Réessayer';
+      } finally {
+        btn.disabled = false;
+        if (spinner) spinner.classList.add('hidden');
+      }
     }
 
     async function saveProjectConfig(section) {
