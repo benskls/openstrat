@@ -612,7 +612,9 @@ app.get('/api/setup/detect-existing', async (req, res) => {
     githubUrl: null,
     vercelExists: false,
     vercelUrl: null,
-    vercelChecked: false // false = CLI pas auth, true = on a vérifié
+    vercelInstalled: false,
+    vercelAuthenticated: false,
+    vercelInstructions: null
   };
 
   // 1. Vérifier GitHub (si gh est auth)
@@ -633,16 +635,21 @@ app.get('/api/setup/detect-existing', async (req, res) => {
     // Repo n'existe pas ou gh non authentifié
   }
 
-  // 2. Vérifier Vercel UNIQUEMENT si le CLI est auth
+  // 2. Vérifier Vercel
   try {
     const vcStatus = await vercel.checkStatus();
+    result.vercelInstalled = vcStatus.installed;
+    result.vercelAuthenticated = vcStatus.authenticated;
+
     if (vcStatus.authenticated && paths) {
-      result.vercelChecked = true;
       const urls = await vercel.getDeploymentUrl(paths.root);
       if (urls.deploymentUrl) {
         result.vercelExists = true;
         result.vercelUrl = urls.deploymentUrl;
       }
+    } else if (!vcStatus.authenticated && vcStatus.instructions) {
+      // CLI installé mais pas auth → retourner les instructions
+      result.vercelInstructions = vcStatus.instructions;
     }
   } catch (e) {
     // Projet n'existe pas ou vercel non authentifié
