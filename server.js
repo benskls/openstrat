@@ -635,7 +635,6 @@ app.get('/api/version', async (req, res) => {
     
     if (latest) {
       result.latest = latest;
-      // Comparaison simple : si latest ne commence pas par v + current
       const normalizedLatest = latest.startsWith('v') ? latest.substring(1) : latest;
       result.updateAvailable = normalizedLatest !== CURRENT_VERSION;
     }
@@ -644,6 +643,35 @@ app.get('/api/version', async (req, res) => {
   }
   
   res.json(result);
+});
+
+/**
+ * POST /api/update
+ * Exécute le script de mise à jour et retourne le résultat.
+ */
+app.post('/api/update', async (req, res) => {
+  const { exec } = require('child_process');
+  const updateScript = path.join(OPENSTRAT_DIR, 'update-openstrat.sh');
+  
+  if (!fs.existsSync(updateScript)) {
+    return res.status(404).json({ 
+      success: false, 
+      error: 'Script de mise à jour introuvable. Réinstallez OpenStrat.' 
+    });
+  }
+
+  res.json({ success: true, message: 'Mise à jour en cours...' });
+
+  // Exécuter la mise à jour en arrière-plan après avoir répondu
+  setTimeout(() => {
+    exec(`bash "${updateScript}"`, { cwd: OPENSTRAT_DIR, timeout: 120000 }, (err, stdout, stderr) => {
+      if (err) {
+        console.error('Update failed:', err.message);
+      } else {
+        console.log('Update completed:', stdout);
+      }
+    });
+  }, 100);
 });
 
 // ─── Server Start ──────────────────────────────────────────────────
