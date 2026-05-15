@@ -597,6 +597,55 @@ app.get('/api/setup/github-url', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/setup/detect-existing?projectId=<id>
+ * Détecte si un repo GitHub ou un projet Vercel existe déjà pour ce projet.
+ */
+app.get('/api/setup/detect-existing', async (req, res) => {
+  const { projectId } = req.query;
+  if (!projectId) return res.status(400).json({ error: 'Missing projectId' });
+
+  const result = {
+    githubExists: false,
+    githubUrl: null,
+    vercelExists: false,
+    vercelUrl: null
+  };
+
+  try {
+    // Vérifier si le repo GitHub existe (public ou privé)
+    const { stdout: ghOut } = await require('./lib/setup-utils').execPromise(
+      `gh repo view ${projectId} --json url,isPrivate`,
+      { timeout: 10000 }
+    );
+    const ghData = JSON.parse(ghOut);
+    if (ghData && ghData.url) {
+      result.githubExists = true;
+      result.githubUrl = ghData.url;
+    }
+  } catch (e) {
+    // Repo n'existe pas ou gh non authentifié
+  }
+
+  try {
+    // Vérifier si le projet Vercel existe
+    const { stdout: vcOut } = await require('./lib/setup-utils').execPromise(
+      `vercel list ${projectId} --meta`,
+      { timeout: 10000 }
+    );
+    // Chercher une URL de déploiement
+    const urlMatch = vcOut.match(/https:\/\/[^\s]+\.vercel\.app/);
+    if (urlMatch) {
+      result.vercelExists = true;
+      result.vercelUrl = urlMatch[0];
+    }
+  } catch (e) {
+    // Projet n'existe pas ou vercel non authentifié
+  }
+
+  res.json(result);
+});
+
 // ─── VERSION & UPDATE CHECK ────────────────────────────────────────
 
 const PACKAGE_JSON = require('./package.json');
