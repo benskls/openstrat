@@ -953,8 +953,8 @@
           }
         }
 
-        // Stocker le statut Vercel (même si pas auth, pour afficher les instructions)
-        if (data.vercelInstalled || data.vercelAuthenticated) {
+        // Stocker le statut Vercel (même si pas installé, pour afficher le bon état)
+        if (typeof data.vercelInstalled !== 'undefined') {
           currentProjectConfig.vercel = currentProjectConfig.vercel || {};
           currentProjectConfig.vercel.installed = data.vercelInstalled;
           currentProjectConfig.vercel.authenticated = data.vercelAuthenticated;
