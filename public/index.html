@@ -921,6 +921,11 @@
         currentProjectConfig = config || {};
         pendingEnvVars = { ...(currentProjectConfig.env || {}) };
 
+        // Initialiser vercel avec des valeurs par défaut pour éviter les états ambigus
+        if (!currentProjectConfig.vercel) {
+          currentProjectConfig.vercel = { installed: false, authenticated: false };
+        }
+
         // Détection automatique des projets existants (GitHub + Vercel)
         await detectExistingProjects();
 
@@ -966,12 +971,11 @@
 
         // Si un projet Vercel existe et qu'on ne l'a pas en config
         if (data.vercelExists && data.vercelUrl) {
-          if (!currentProjectConfig.vercel || !currentProjectConfig.vercel.url) {
-            currentProjectConfig.vercel = currentProjectConfig.vercel || {};
-            currentProjectConfig.vercel.url = data.vercelUrl;
-            currentProjectConfig.vercel.status = 'deployed';
-            updated = true;
-          }
+          currentProjectConfig.vercel = currentProjectConfig.vercel || {};
+          currentProjectConfig.vercel.url = data.vercelUrl;
+          currentProjectConfig.vercel.projectUrl = data.vercelProjectUrl || null;
+          currentProjectConfig.vercel.status = 'deployed';
+          updated = true;
         }
 
         // Si au moins GitHub existe, marquer le setup comme terminé
@@ -1038,6 +1042,11 @@
             if (vcSubtitle) vcSubtitle.textContent = 'Site en ligne';
             if (vcStatus) vcStatus.textContent = '✅';
             if (vcDesc) vcDesc.textContent = 'Votre site est accessible ici.';
+            if (vcContent && vercel.projectUrl) {
+              vcContent.innerHTML = `
+                <a href="${vercel.projectUrl}" target="_blank" class="text-xs text-zinc-500 hover:text-zinc-300 underline mt-2 inline-block">Dashboard Vercel →</a>
+              `;
+            }
           } else if (vercel.installed && !vercel.authenticated) {
             // État 2 : Installé mais pas connecté
             const vcLink = document.getElementById('config-vercel-url');
