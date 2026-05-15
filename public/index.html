@@ -917,6 +917,10 @@
         const config = await res.json();
         currentProjectConfig = config || {};
         pendingEnvVars = { ...(currentProjectConfig.env || {}) };
+
+        // Détection automatique des projets existants (GitHub + Vercel)
+        await detectExistingProjects();
+
         updateConfigUI(currentProjectConfig);
       } catch (err) {
         console.error('Config load error:', err);
@@ -924,6 +928,59 @@
         currentProjectConfig = {};
         pendingEnvVars = {};
         updateConfigUI({});
+      }
+    }
+
+    async function detectExistingProjects() {
+      if (!currentProject) return;
+      try {
+        const res = await fetch(`/api/setup/detect-existing?projectId=${encodeURIComponent(currentProject)}`);
+        if (!res.ok) return;
+        const data = await res.json();
+
+        let updated = false;
+
+        // Si un repo GitHub existe et qu'on ne l'a pas en config
+        if (data.githubExists && data.githubUrl) {
+          if (!currentProjectConfig.github || !currentProjectConfig.github.url) {
+            currentProjectConfig.github = currentProjectConfig.github || {};
+            currentProjectConfig.github.repo = currentProject;
+            currentProjectConfig.github.url = data.githubUrl;
+            updated = true;
+          }
+        }
+
+        // Si un projet Vercel existe et qu'on ne l'a pas en config
+        if (data.vercelExists && data.vercelUrl) {
+          if (!currentProjectConfig.vercel || !currentProjectConfig.vercel.url) {
+            currentProjectConfig.vercel = currentProjectConfig.vercel || {};
+            currentProjectConfig.vercel.url = data.vercelUrl;
+            currentProjectConfig.vercel.status = 'deployed';
+            updated = true;
+          }
+        }
+
+        // Si au moins un des deux existe, marquer le setup comme terminé
+        if ((data.githubExists || data.vercelExists) && !currentProjectConfig.setup) {
+          currentProjectConfig.setup = {
+            completed: true,
+            date: new Date().toISOString(),
+            detected: true
+          };
+          updated = true;
+        }
+
+        // Sauvegarder automatiquement la config détectée
+        if (updated) {
+          await fetch(`/api/config/project/${encodeURIComponent(currentProject)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(currentProjectConfig)
+          });
+        }
+      } catch (err) {
+        // Silencieux — pas de connexion ou CLI non configurés
+        console.log('Detection error (expected if CLI not configured):', err.message);
       }
     }
 
