@@ -600,44 +600,49 @@ app.get('/api/setup/github-url', async (req, res) => {
 /**
  * GET /api/setup/detect-existing?projectId=<id>
  * Détecte si un repo GitHub ou un projet Vercel existe déjà pour ce projet.
+ * Ne retourne des URLs que si elles sont vérifiables (CLI auth).
  */
 app.get('/api/setup/detect-existing', async (req, res) => {
   const { projectId } = req.query;
   if (!projectId) return res.status(400).json({ error: 'Missing projectId' });
 
+  const paths = getProjectPaths(projectId);
   const result = {
     githubExists: false,
     githubUrl: null,
     vercelExists: false,
-    vercelUrl: null
+    vercelUrl: null,
+    vercelChecked: false // false = CLI pas auth, true = on a vérifié
   };
 
+  // 1. Vérifier GitHub (si gh est auth)
   try {
-    // Vérifier si le repo GitHub existe (public ou privé)
-    const { stdout: ghOut } = await require('./lib/setup-utils').execPromise(
-      `gh repo view ${projectId} --json url,isPrivate`,
-      { timeout: 10000 }
-    );
-    const ghData = JSON.parse(ghOut);
-    if (ghData && ghData.url) {
-      result.githubExists = true;
-      result.githubUrl = ghData.url;
+    const ghStatus = await github.checkStatus();
+    if (ghStatus.authenticated) {
+      const { stdout: ghOut } = await require('./lib/setup-utils').execPromise(
+        `gh repo view ${projectId} --json url,isPrivate`,
+        { timeout: 10000 }
+      );
+      const ghData = JSON.parse(ghOut);
+      if (ghData && ghData.url) {
+        result.githubExists = true;
+        result.githubUrl = ghData.url;
+      }
     }
   } catch (e) {
     // Repo n'existe pas ou gh non authentifié
   }
 
+  // 2. Vérifier Vercel UNIQUEMENT si le CLI est auth
   try {
-    // Vérifier si le projet Vercel existe
-    const { stdout: vcOut } = await require('./lib/setup-utils').execPromise(
-      `vercel list ${projectId} --meta`,
-      { timeout: 10000 }
-    );
-    // Chercher une URL de déploiement
-    const urlMatch = vcOut.match(/https:\/\/[^\s]+\.vercel\.app/);
-    if (urlMatch) {
-      result.vercelExists = true;
-      result.vercelUrl = urlMatch[0];
+    const vcStatus = await vercel.checkStatus();
+    if (vcStatus.authenticated && paths) {
+      result.vercelChecked = true;
+      const urls = await vercel.getDeploymentUrl(paths.root);
+      if (urls.deploymentUrl) {
+        result.vercelExists = true;
+        result.vercelUrl = urls.deploymentUrl;
+      }
     }
   } catch (e) {
     // Projet n'existe pas ou vercel non authentifié
@@ -648,50 +653,47 @@ app.get('/api/setup/detect-existing', async (req, res) => {
 
 // ─── VERSION & UPDATE CHECK ────────────────────────────────────────
 
-const PACKAGE_JSON = require('./package.json');
-const CURRENT_VERSION = PACKAGE_JSON.version;
+/**
+ * Compare le commit hash local avec le hash distant pour détecter
+ * si la branche main du repo distant est en avance.
+ * @returns {Promise<{localHash: string|null, remoteHash: string|null, updateAvailable: boolean}>}
+ */
+async function checkGitUpdates() {
+  const { execPromise } = require('./lib/setup-utils');
+  let localHash = null;
+  let remoteHash = null;
+
+  try {
+    const { stdout: local } = await execPromise('git rev-parse HEAD', { cwd: OPENSTRAT_DIR });
+    localHash = local.trim();
+  } catch (e) {
+    return { localHash: null, remoteHash: null, updateAvailable: false };
+  }
+
+  try {
+    const { stdout: remote } = await execPromise('git ls-remote origin refs/heads/main', { cwd: OPENSTRAT_DIR });
+    // Format: "<hash>\trefs/heads/main"
+    remoteHash = remote.split('\t')[0].trim();
+  } catch (e) {
+    return { localHash, remoteHash: null, updateAvailable: false };
+  }
+
+  return {
+    localHash,
+    remoteHash,
+    updateAvailable: !!remoteHash && remoteHash !== localHash
+  };
+}
 
 app.get('/api/version', async (req, res) => {
-  const result = {
-    current: CURRENT_VERSION,
-    latest: null,
-    updateAvailable: false,
+  const gitCheck = await checkGitUpdates();
+  
+  res.json({
+    current: gitCheck.localHash ? gitCheck.localHash.substring(0, 7) : 'dev',
+    latest: gitCheck.remoteHash ? gitCheck.remoteHash.substring(0, 7) : null,
+    updateAvailable: gitCheck.updateAvailable,
     repoUrl: 'https://github.com/benskls/openstrat'
-  };
-  
-  try {
-    const https = require('https');
-    const options = {
-      hostname: 'api.github.com',
-      path: '/repos/benskls/openstrat/releases/latest',
-      headers: { 'User-Agent': 'OpenStrat-Dashboard' }
-    };
-    
-    const latest = await new Promise((resolve, reject) => {
-      https.get(options, (response) => {
-        let data = '';
-        response.on('data', chunk => data += chunk);
-        response.on('end', () => {
-          try {
-            const json = JSON.parse(data);
-            resolve(json.tag_name || null);
-          } catch (e) {
-            resolve(null);
-          }
-        });
-      }).on('error', () => resolve(null));
-    });
-    
-    if (latest) {
-      result.latest = latest;
-      const normalizedLatest = latest.startsWith('v') ? latest.substring(1) : latest;
-      result.updateAvailable = normalizedLatest !== CURRENT_VERSION;
-    }
-  } catch (err) {
-    // Silencieux — pas de connexion = pas de mise à jour affichée
-  }
-  
-  res.json(result);
+  });
 });
 
 /**
