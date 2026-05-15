@@ -648,6 +648,7 @@ app.get('/api/setup/detect-existing', async (req, res) => {
         result.vercelExists = true;
         result.vercelUrl = projectCheck.url;
         result.vercelProjectUrl = projectCheck.projectUrl;
+        result.vercelDomain = projectCheck.domain;
       }
     } else if (!vcStatus.authenticated && vcStatus.instructions) {
       // CLI installé mais pas auth → retourner les instructions
