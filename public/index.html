@@ -273,40 +273,77 @@
 
     <!-- View: Config -->
     <div id="view-config" class="view-section hidden flex-1 overflow-y-auto p-6">
-      <div class="max-w-5xl mx-auto fade-in">
+      <div class="max-w-3xl mx-auto fade-in">
         <!-- Header -->
         <div class="flex items-center justify-between mb-6">
           <div>
             <h2 class="text-2xl font-bold text-white">Configuration</h2>
-            <p class="text-sm text-zinc-500 mt-1" id="config-project-label">Select a project</p>
+            <p class="text-sm text-zinc-500 mt-1" id="config-project-label">Sélectionnez un projet</p>
           </div>
-          <div class="flex items-center gap-3">
-            <div id="config-global-status" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700">
-              <span id="config-status-dot" class="w-2 h-2 rounded-full bg-red-500"></span>
-              <span id="config-status-text" class="text-xs text-zinc-300 font-medium">Non configuré</span>
+        </div>
+
+        <!-- Wizard (avant setup) -->
+        <div id="config-wizard">
+          <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 mb-6">
+            <h3 class="text-lg font-semibold text-white mb-2">Prérequis</h3>
+            <p class="text-sm text-zinc-500 mb-6">Avant de déployer, vérifiez que les outils suivants sont installés sur votre ordinateur :</p>
+
+            <!-- Stepper -->
+            <div class="flex items-center gap-2 mb-6">
+              <div id="step-git" class="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-800 text-xs text-zinc-400 transition">
+                <span class="w-5 h-5 rounded-full bg-zinc-700 flex items-center justify-center text-[10px] font-bold">1</span>
+                <span>Git</span>
+              </div>
+              <div class="flex-1 h-px bg-zinc-800"></div>
+              <div id="step-gh" class="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-800 text-xs text-zinc-400 transition">
+                <span class="w-5 h-5 rounded-full bg-zinc-700 flex items-center justify-center text-[10px] font-bold">2</span>
+                <span>GitHub CLI</span>
+              </div>
+              <div class="flex-1 h-px bg-zinc-800"></div>
+              <div id="step-vercel" class="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-800 text-xs text-zinc-400 transition">
+                <span class="w-5 h-5 rounded-full bg-zinc-700 flex items-center justify-center text-[10px] font-bold">3</span>
+                <span>Vercel CLI</span>
+              </div>
+            </div>
+
+            <!-- Status cards -->
+            <div id="setup-cli-status" class="space-y-3 mb-6">
+              <div class="flex items-center gap-2 text-xs text-zinc-400">
+                <div class="spinner w-3 h-3"></div>
+                <span>Cliquez sur "Vérifier" pour contrôler les outils...</span>
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center gap-3">
+              <button id="setup-btn" onclick="runAutoSetup()" disabled class="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-medium transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                <span id="setup-btn-text">Lancer le setup</span>
+                <div id="setup-btn-spinner" class="spinner hidden"></div>
+              </button>
+              <button onclick="checkSetupPrerequisites()" class="text-xs text-indigo-400 hover:text-indigo-300 underline">Vérifier les prérequis</button>
+              <span id="setup-result" class="text-xs text-zinc-500"></span>
+            </div>
+          </div>
+
+          <div class="bg-zinc-950 border border-zinc-800 rounded-xl p-4">
+            <div class="flex items-start gap-3 text-xs text-zinc-400 leading-relaxed">
+              <svg class="w-4 h-4 text-zinc-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <p>Le setup automatique va créer un repository GitHub privé, pousser votre code, et déployer sur Vercel. Chaque étape affiche des commandes à copier si un outil est manquant.</p>
             </div>
           </div>
         </div>
 
-        <!-- Progress Bar -->
-        <div class="mb-8">
-          <div class="flex justify-between text-xs text-zinc-500 mb-2">
-            <span>GitHub</span>
-            <span>Vercel</span>
-            <span>Environnement</span>
+        <!-- Results (après setup) -->
+        <div id="config-results" class="hidden space-y-6">
+          <div class="flex items-center gap-2 text-green-400 text-sm mb-4">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span class="font-medium">Setup terminé avec succès</span>
           </div>
-          <div class="h-2 bg-zinc-800 rounded-full overflow-hidden">
-            <div id="config-progress-bar" class="h-full bg-indigo-500 rounded-full transition-all duration-500" style="width: 0%"></div>
-          </div>
-          <p class="text-xs text-zinc-600 mt-1.5" id="config-progress-text">0 sur 3 étapes configurées</p>
-        </div>
 
-        <!-- Cards Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <!-- GitHub Card -->
-          <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 phase-card">
-            <div class="flex items-center justify-between mb-4">
-              <div class="flex items-center gap-3">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- GitHub Result -->
+            <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 phase-card">
+              <div class="flex items-center gap-3 mb-4">
                 <div class="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center">
                   <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
                 </div>
@@ -315,54 +352,28 @@
                   <p class="text-xs text-zinc-500">Repository du projet</p>
                 </div>
               </div>
-              <span id="github-status-icon" class="text-lg">❌</span>
+              <a id="config-github-url" href="#" target="_blank" class="block text-sm text-indigo-400 hover:text-indigo-300 underline mb-2 break-all">https://github.com/...</a>
+              <p class="text-xs text-zinc-500">Votre code est sauvegardé ici.</p>
             </div>
-            <div class="space-y-3">
-              <div>
-                <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">Nom du repository (owner/repo)</label>
-                <input type="text" id="github-repo-input" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition" placeholder="monuser/mon-projet">
-              </div>
-              <div>
-                <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">URL du repository</label>
-                <input type="url" id="github-url-input" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition" placeholder="https://github.com/...">
-              </div>
-              <button onclick="saveProjectConfig('github')" class="w-full px-3 py-2 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg border border-zinc-700 transition font-medium">Enregistrer GitHub</button>
-            </div>
-          </div>
 
-          <!-- Vercel Card -->
-          <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 phase-card">
-            <div class="flex items-center justify-between mb-4">
-              <div class="flex items-center gap-3">
+            <!-- Vercel Result -->
+            <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 phase-card">
+              <div class="flex items-center gap-3 mb-4">
                 <div class="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center">
                   <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M24 22.525H0l12-21.05 12 21.05z"/></svg>
                 </div>
                 <div>
                   <h3 class="font-semibold text-white text-sm">Vercel</h3>
-                  <p class="text-xs text-zinc-500">Déploiement &amp; preview</p>
+                  <p class="text-xs text-zinc-500">Site en ligne</p>
                 </div>
               </div>
-              <span id="vercel-status-icon" class="text-lg">❌</span>
-            </div>
-            <div class="space-y-3">
-              <div>
-                <label class="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1.5">URL de déploiement</label>
-                <input type="url" id="vercel-url-input" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 transition" placeholder="https://mon-projet.vercel.app">
-              </div>
-              <div class="flex items-center gap-2">
-                <span class="text-[10px] text-zinc-500">Statut :</span>
-                <select id="vercel-status-input" class="bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-300">
-                  <option value="not_deployed">Non déployé</option>
-                  <option value="preview">Preview</option>
-                  <option value="production">Production</option>
-                </select>
-              </div>
-              <button onclick="saveProjectConfig('vercel')" class="w-full px-3 py-2 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg border border-zinc-700 transition font-medium">Enregistrer Vercel</button>
+              <a id="config-vercel-url" href="#" target="_blank" class="block text-sm text-indigo-400 hover:text-indigo-300 underline mb-2 break-all">https://...</a>
+              <p class="text-xs text-zinc-500">Votre site est accessible ici.</p>
             </div>
           </div>
 
-          <!-- Environment Variables Card -->
-          <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 phase-card">
+          <!-- Environment Variables (only after setup) -->
+          <div id="env-card-after-setup" class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 phase-card">
             <div class="flex items-center justify-between mb-4">
               <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center">
@@ -370,10 +381,9 @@
                 </div>
                 <div>
                   <h3 class="font-semibold text-white text-sm">Variables d'environnement</h3>
-                  <p class="text-xs text-zinc-500">Clés sensibles du projet</p>
+                  <p class="text-xs text-zinc-500">Clés sensibles du projet (optionnel)</p>
                 </div>
               </div>
-              <span id="env-status-icon" class="text-lg">❌</span>
             </div>
             <div class="space-y-3">
               <div id="env-vars-list" class="space-y-2 max-h-40 overflow-y-auto"></div>
@@ -383,47 +393,6 @@
                 <button onclick="addEnvVar()" class="px-3 py-2 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg border border-zinc-700 transition">+</button>
               </div>
               <button onclick="saveProjectConfig('env')" class="w-full px-3 py-2 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg border border-zinc-700 transition font-medium">Enregistrer les variables</button>
-            </div>
-          </div>
-
-          <!-- Auto Setup Card -->
-          <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 phase-card md:col-span-2">
-            <div class="flex items-center justify-between mb-4">
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-lg bg-indigo-500/10 flex items-center justify-center">
-                  <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                </div>
-                <div>
-                  <h3 class="font-semibold text-white text-sm">Setup automatique</h3>
-                  <p class="text-xs text-zinc-500">Initialisation du repo Git + déploiement Vercel</p>
-                </div>
-              </div>
-              <span id="setup-status-icon" class="text-lg">❌</span>
-            </div>
-
-            <!-- Prérequis CLI -->
-            <div id="setup-prerequisites" class="space-y-3 mb-4">
-              <div class="flex items-center justify-between">
-                <span class="text-xs text-zinc-500">Vérification des outils...</span>
-                <button onclick="checkSetupPrerequisites()" class="text-xs text-indigo-400 hover:text-indigo-300 underline">Vérifier</button>
-              </div>
-              <div id="setup-cli-status" class="hidden">
-                <!-- Contenu injecté par JS -->
-              </div>
-            </div>
-
-            <div class="bg-zinc-950 border border-zinc-800 rounded-lg p-4 mb-4">
-              <div class="flex items-start gap-3 text-xs text-zinc-400 leading-relaxed">
-                <svg class="w-4 h-4 text-zinc-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                <p>Cette action va créer un repository GitHub (si inexistant), pousser le code, et configurer le déploiement Vercel. Nécessite les CLI GitHub et Vercel installées et authentifiées.</p>
-              </div>
-            </div>
-            <div class="flex items-center gap-3">
-              <button id="setup-btn" onclick="runAutoSetup()" class="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-medium transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                <span id="setup-btn-text">Lancer le setup</span>
-                <div id="setup-btn-spinner" class="spinner hidden"></div>
-              </button>
-              <span id="setup-result" class="text-xs text-zinc-500"></span>
             </div>
           </div>
         </div>
@@ -956,54 +925,37 @@
         pendingEnvVars = {};
         updateConfigUI({});
       }
-      // Vérifier les prérequis CLI
-      await checkSetupPrerequisites();
     }
 
     function updateConfigUI(config) {
       const github = config.github || {};
       const vercel = config.vercel || {};
       const env = config.env || {};
-
-      // Inputs
-      document.getElementById('github-repo-input').value = github.repo || '';
-      document.getElementById('github-url-input').value = github.url || '';
-      document.getElementById('vercel-url-input').value = vercel.url || '';
-      document.getElementById('vercel-status-input').value = vercel.status || 'not_deployed';
-
-      // Status icons
-      const githubOk = !!(github.repo && github.url);
-      const vercelOk = !!(vercel.url && vercel.status && vercel.status !== 'not_deployed');
-      const envOk = Object.keys(env).length > 0;
       const setupOk = !!(config.setup && config.setup.completed);
 
-      document.getElementById('github-status-icon').textContent = githubOk ? '✅' : '❌';
-      document.getElementById('vercel-status-icon').textContent = vercelOk ? '✅' : '❌';
-      document.getElementById('env-status-icon').textContent = envOk ? '✅' : '❌';
-      document.getElementById('setup-status-icon').textContent = setupOk ? '✅' : '❌';
+      const wizard = document.getElementById('config-wizard');
+      const results = document.getElementById('config-results');
 
-      // Progress bar
-      const steps = [githubOk, vercelOk, envOk];
-      const completed = steps.filter(Boolean).length;
-      const pct = (completed / 3) * 100;
-      document.getElementById('config-progress-bar').style.width = pct + '%';
-      document.getElementById('config-progress-text').textContent = `${completed} sur 3 étapes configurées`;
-
-      // Global status
-      const allDone = completed === 3;
-      const dot = document.getElementById('config-status-dot');
-      const text = document.getElementById('config-status-text');
-      const badge = document.getElementById('config-status-badge');
-
-      if (allDone) {
-        dot.className = 'w-2 h-2 rounded-full bg-green-500';
-        text.textContent = 'Configuré';
-        badge.classList.add('hidden');
+      if (setupOk) {
+        // Mode résultats
+        if (wizard) wizard.classList.add('hidden');
+        if (results) {
+          results.classList.remove('hidden');
+          const ghLink = document.getElementById('config-github-url');
+          const vcLink = document.getElementById('config-vercel-url');
+          if (ghLink && github.url) {
+            ghLink.href = github.url;
+            ghLink.textContent = github.url;
+          }
+          if (vcLink && vercel.url) {
+            vcLink.href = vercel.url;
+            vcLink.textContent = vercel.url;
+          }
+        }
       } else {
-        dot.className = 'w-2 h-2 rounded-full bg-yellow-500';
-        text.textContent = 'En cours';
-        badge.classList.remove('hidden');
-        badge.textContent = (3 - completed).toString();
+        // Mode wizard
+        if (wizard) wizard.classList.remove('hidden');
+        if (results) results.classList.add('hidden');
       }
 
       renderEnvVars();
@@ -1203,6 +1155,39 @@
             html += `<a href="${data.git.instructions.docsUrl}" target="_blank" class="text-[10px] text-indigo-400 hover:text-indigo-300 underline mt-2 inline-block">Documentation →</a>`;
           }
           html += `</div>`;
+        }
+
+        // Mettre à jour le stepper visuel
+        const stepGit = document.getElementById('step-git');
+        const stepGh = document.getElementById('step-gh');
+        const stepVercel = document.getElementById('step-vercel');
+
+        if (stepGit) {
+          if (data.git && data.git.installed) {
+            stepGit.className = 'flex items-center gap-2 px-3 py-2 rounded-lg bg-green-500/10 text-xs text-green-400 transition';
+            stepGit.querySelector('span').className = 'w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-[10px] font-bold text-white';
+          } else {
+            stepGit.className = 'flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-800 text-xs text-zinc-400 transition';
+            stepGit.querySelector('span').className = 'w-5 h-5 rounded-full bg-zinc-700 flex items-center justify-center text-[10px] font-bold';
+          }
+        }
+        if (stepGh) {
+          if (data.github.installed && data.github.authenticated) {
+            stepGh.className = 'flex items-center gap-2 px-3 py-2 rounded-lg bg-green-500/10 text-xs text-green-400 transition';
+            stepGh.querySelector('span').className = 'w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-[10px] font-bold text-white';
+          } else {
+            stepGh.className = 'flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-800 text-xs text-zinc-400 transition';
+            stepGh.querySelector('span').className = 'w-5 h-5 rounded-full bg-zinc-700 flex items-center justify-center text-[10px] font-bold';
+          }
+        }
+        if (stepVercel) {
+          if (data.vercel.installed && data.vercel.authenticated) {
+            stepVercel.className = 'flex items-center gap-2 px-3 py-2 rounded-lg bg-green-500/10 text-xs text-green-400 transition';
+            stepVercel.querySelector('span').className = 'w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-[10px] font-bold text-white';
+          } else {
+            stepVercel.className = 'flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-800 text-xs text-zinc-400 transition';
+            stepVercel.querySelector('span').className = 'w-5 h-5 rounded-full bg-zinc-700 flex items-center justify-center text-[10px] font-bold';
+          }
         }
 
         if (allReady) {
