@@ -1075,13 +1075,20 @@
               instructionsHtml += '</div>';
               vcContent.innerHTML = instructionsHtml;
             }
+          } else if (vercel.installed && vercel.authenticated) {
+            // État 4 : Installé + auth, mais pas encore déployé
+            const vcLink = document.getElementById('config-vercel-url');
+            if (vcLink) vcLink.classList.add('hidden');
+            if (vcSubtitle) vcSubtitle.textContent = '✅ Connecté à Vercel';
+            if (vcStatus) vcStatus.textContent = '👤';
+            if (vcDesc) vcDesc.textContent = 'Prêt au déploiement. Cliquez sur "Vérifier les prérequis" pour lancer.';
           } else {
-            // État 4 : On ne sait rien
+            // État 5 : On ne sait rien (ne devrait pas arriver)
             const vcLink = document.getElementById('config-vercel-url');
             if (vcLink) vcLink.classList.add('hidden');
             if (vcSubtitle) vcSubtitle.textContent = 'Vercel';
-            if (vcStatus) vcStatus.textContent = '';
-            if (vcDesc) vcDesc.textContent = 'Vérifiez les prérequis pour connecter Vercel.';
+            if (vcStatus) vcStatus.textContent = '❓';
+            if (vcDesc) vcDesc.textContent = 'Cliquez sur "Vérifier les prérequis" pour actualiser.';
           }
         }
       } else {
