@@ -641,11 +641,13 @@ app.get('/api/setup/detect-existing', async (req, res) => {
     result.vercelInstalled = vcStatus.installed;
     result.vercelAuthenticated = vcStatus.authenticated;
 
-    if (vcStatus.authenticated && paths) {
-      const urls = await vercel.getDeploymentUrl(paths.root);
-      if (urls.deploymentUrl) {
+    if (vcStatus.authenticated) {
+      // Vérifier si un projet avec ce nom existe déjà
+      const projectCheck = await vercel.checkProjectExists(projectId);
+      if (projectCheck.exists) {
         result.vercelExists = true;
-        result.vercelUrl = urls.deploymentUrl;
+        result.vercelUrl = projectCheck.url;
+        result.vercelProjectUrl = projectCheck.projectUrl;
       }
     } else if (!vcStatus.authenticated && vcStatus.instructions) {
       // CLI installé mais pas auth → retourner les instructions
