@@ -364,11 +364,14 @@
                 </div>
                 <div>
                   <h3 class="font-semibold text-white text-sm">Vercel</h3>
-                  <p class="text-xs text-zinc-500">Site en ligne</p>
+                  <p class="text-xs text-zinc-500" id="vercel-card-subtitle">Site en ligne</p>
                 </div>
+                <span id="vercel-card-status" class="ml-auto text-lg"></span>
               </div>
-              <a id="config-vercel-url" href="#" target="_blank" class="block text-sm text-indigo-400 hover:text-indigo-300 underline mb-2 break-all">https://...</a>
-              <p class="text-xs text-zinc-500">Votre site est accessible ici.</p>
+              <div id="vercel-card-content">
+                <a id="config-vercel-url" href="#" target="_blank" class="block text-sm text-indigo-400 hover:text-indigo-300 underline mb-2 break-all">https://...</a>
+                <p class="text-xs text-zinc-500" id="vercel-card-desc">Votre site est accessible ici.</p>
+              </div>
             </div>
           </div>
 
@@ -950,6 +953,17 @@
           }
         }
 
+        // Stocker le statut Vercel (même si pas auth, pour afficher les instructions)
+        if (data.vercelInstalled || data.vercelAuthenticated) {
+          currentProjectConfig.vercel = currentProjectConfig.vercel || {};
+          currentProjectConfig.vercel.installed = data.vercelInstalled;
+          currentProjectConfig.vercel.authenticated = data.vercelAuthenticated;
+          if (data.vercelInstructions) {
+            currentProjectConfig.vercel.instructions = data.vercelInstructions;
+          }
+          updated = true;
+        }
+
         // Si un projet Vercel existe et qu'on ne l'a pas en config
         if (data.vercelExists && data.vercelUrl) {
           if (!currentProjectConfig.vercel || !currentProjectConfig.vercel.url) {
@@ -960,8 +974,8 @@
           }
         }
 
-        // Si au moins un des deux existe, marquer le setup comme terminé
-        if ((data.githubExists || data.vercelExists) && !currentProjectConfig.setup) {
+        // Si au moins GitHub existe, marquer le setup comme terminé
+        if (data.githubExists && !currentProjectConfig.setup) {
           currentProjectConfig.setup = {
             completed: true,
             date: new Date().toISOString(),
@@ -993,29 +1007,75 @@
       const wizard = document.getElementById('config-wizard');
       const results = document.getElementById('config-results');
       const vercelCard = document.getElementById('vercel-result-card');
+      const vcContent = document.getElementById('vercel-card-content');
+      const vcSubtitle = document.getElementById('vercel-card-subtitle');
+      const vcStatus = document.getElementById('vercel-card-status');
+      const vcDesc = document.getElementById('vercel-card-desc');
 
       if (setupOk) {
         // Mode résultats
         if (wizard) wizard.classList.add('hidden');
-        if (results) {
-          results.classList.remove('hidden');
-          const ghLink = document.getElementById('config-github-url');
-          const vcLink = document.getElementById('config-vercel-url');
-          if (ghLink && github.url) {
-            ghLink.href = github.url;
-            ghLink.textContent = github.url;
-          }
-          if (vcLink && vercel.url) {
-            vcLink.href = vercel.url;
-            vcLink.textContent = vercel.url;
-          }
-          // Afficher la card Vercel UNIQUEMENT si on a une URL vraie
-          if (vercelCard) {
-            if (vercel.url) {
-              vercelCard.classList.remove('hidden');
-            } else {
-              vercelCard.classList.add('hidden');
+        if (results) results.classList.remove('hidden');
+
+        const ghLink = document.getElementById('config-github-url');
+        if (ghLink && github.url) {
+          ghLink.href = github.url;
+          ghLink.textContent = github.url;
+        }
+
+        // Card Vercel : toujours visible si setup terminé
+        if (vercelCard) {
+          vercelCard.classList.remove('hidden');
+
+          if (vercel.url) {
+            // État 1 : Déployé
+            const vcLink = document.getElementById('config-vercel-url');
+            if (vcLink) {
+              vcLink.href = vercel.url;
+              vcLink.textContent = vercel.url;
+              vcLink.classList.remove('hidden');
             }
+            if (vcSubtitle) vcSubtitle.textContent = 'Site en ligne';
+            if (vcStatus) vcStatus.textContent = '✅';
+            if (vcDesc) vcDesc.textContent = 'Votre site est accessible ici.';
+          } else if (vercel.installed && !vercel.authenticated) {
+            // État 2 : Installé mais pas connecté
+            const vcLink = document.getElementById('config-vercel-url');
+            if (vcLink) vcLink.classList.add('hidden');
+            if (vcSubtitle) vcSubtitle.textContent = 'Vercel CLI non connecté';
+            if (vcStatus) vcStatus.textContent = '⚠️';
+            if (vcDesc) vcDesc.textContent = 'Connectez-vous pour voir votre déploiement.';
+            if (vcContent) {
+              // Afficher les instructions de connexion si disponibles
+              let instructionsHtml = '';
+              if (vercel.instructions && vercel.instructions.steps) {
+                instructionsHtml += '<div class="space-y-1.5 mt-2">';
+                vercel.instructions.steps.forEach(step => {
+                  instructionsHtml += renderStep(step);
+                });
+                instructionsHtml += '</div>';
+              } else {
+                instructionsHtml += '<div class="text-xs text-zinc-400 font-mono bg-zinc-950 rounded px-2 py-1.5 border border-zinc-800">vercel login</div>';
+              }
+              vcContent.innerHTML = instructionsHtml;
+            }
+          } else if (!vercel.installed) {
+            // État 3 : Pas installé
+            const vcLink = document.getElementById('config-vercel-url');
+            if (vcLink) vcLink.classList.add('hidden');
+            if (vcSubtitle) vcSubtitle.textContent = 'Vercel CLI non installé';
+            if (vcStatus) vcStatus.textContent = '❌';
+            if (vcDesc) vcDesc.textContent = 'Installez la CLI pour déployer sur Vercel.';
+            if (vcContent) {
+              vcContent.innerHTML = '<div class="text-xs text-zinc-400 font-mono bg-zinc-950 rounded px-2 py-1.5 border border-zinc-800">npm install -g vercel</div>';
+            }
+          } else {
+            // État 4 : On ne sait rien
+            const vcLink = document.getElementById('config-vercel-url');
+            if (vcLink) vcLink.classList.add('hidden');
+            if (vcSubtitle) vcSubtitle.textContent = 'Vercel';
+            if (vcStatus) vcStatus.textContent = '';
+            if (vcDesc) vcDesc.textContent = 'Vérifiez les prérequis pour connecter Vercel.';
           }
         }
       } else {
