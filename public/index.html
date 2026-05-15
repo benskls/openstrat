@@ -357,7 +357,7 @@
             </div>
 
             <!-- Vercel Result -->
-            <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 phase-card">
+            <div id="vercel-result-card" class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 phase-card">
               <div class="flex items-center gap-3 mb-4">
                 <div class="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center">
                   <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M24 22.525H0l12-21.05 12 21.05z"/></svg>
@@ -992,6 +992,7 @@
 
       const wizard = document.getElementById('config-wizard');
       const results = document.getElementById('config-results');
+      const vercelCard = document.getElementById('vercel-result-card');
 
       if (setupOk) {
         // Mode résultats
@@ -1007,6 +1008,14 @@
           if (vcLink && vercel.url) {
             vcLink.href = vercel.url;
             vcLink.textContent = vercel.url;
+          }
+          // Afficher la card Vercel UNIQUEMENT si on a une URL vraie
+          if (vercelCard) {
+            if (vercel.url) {
+              vercelCard.classList.remove('hidden');
+            } else {
+              vercelCard.classList.add('hidden');
+            }
           }
         }
       } else {
