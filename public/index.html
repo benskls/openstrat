@@ -1047,16 +1047,22 @@
             if (vcDesc) vcDesc.textContent = 'Connectez-vous pour voir votre déploiement.';
             if (vcContent) {
               // Afficher les instructions de connexion si disponibles
-              let instructionsHtml = '';
+              let instructionsHtml = '<div class="space-y-1.5 mt-2">';
               if (vercel.instructions && vercel.instructions.steps) {
-                instructionsHtml += '<div class="space-y-1.5 mt-2">';
                 vercel.instructions.steps.forEach(step => {
                   instructionsHtml += renderStep(step);
                 });
-                instructionsHtml += '</div>';
               } else {
-                instructionsHtml += '<div class="text-xs text-zinc-400 font-mono bg-zinc-950 rounded px-2 py-1.5 border border-zinc-800">vercel login</div>';
+                // Fallback: instructions manuelles avec boutons copier
+                const steps = [
+                  { text: 'Connectez-vous à Vercel', command: 'vercel login' },
+                  { text: 'Revenez ici et cliquez "Vérifier"' }
+                ];
+                steps.forEach(step => {
+                  instructionsHtml += renderStep(step);
+                });
               }
+              instructionsHtml += '</div>';
               vcContent.innerHTML = instructionsHtml;
             }
           } else if (!vercel.installed) {
@@ -1067,7 +1073,19 @@
             if (vcStatus) vcStatus.textContent = '❌';
             if (vcDesc) vcDesc.textContent = 'Installez la CLI pour déployer sur Vercel.';
             if (vcContent) {
-              vcContent.innerHTML = '<div class="text-xs text-zinc-400 font-mono bg-zinc-950 rounded px-2 py-1.5 border border-zinc-800">npm install -g vercel</div>';
+              // Mêmes instructions que le wizard avec boutons copier + note sudo
+              const steps = [
+                { text: '1. Installez Vercel CLI', command: 'npm install -g vercel' },
+                { text: '   ℹ️ Si une erreur de permission apparaît', note: 'Essayez avec : sudo npm install -g vercel' },
+                { text: '2. Connectez-vous à Vercel', command: 'vercel login' },
+                { text: '3. Revenez ici et cliquez "Vérifier"' }
+              ];
+              let instructionsHtml = '<div class="space-y-1.5 mt-2">';
+              steps.forEach(step => {
+                instructionsHtml += renderStep(step);
+              });
+              instructionsHtml += '</div>';
+              vcContent.innerHTML = instructionsHtml;
             }
           } else {
             // État 4 : On ne sait rien
