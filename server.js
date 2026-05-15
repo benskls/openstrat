@@ -161,7 +161,7 @@ app.post('/api/config/project/:projectId', (req, res) => {
 
 // ─── AUTO SETUP ────────────────────────────────────────────────────
 
-app.post('/api/setup', (req, res) => {
+app.post('/api/setup', async (req, res) => {
   const { projectId } = req.body;
   if (!projectId) {
     return res.status(400).json({ error: 'Missing projectId' });
@@ -170,22 +170,58 @@ app.post('/api/setup', (req, res) => {
   const paths = getProjectPaths(projectId);
   if (!paths) return res.status(404).json({ error: 'Project not found' });
 
-  // Stub: in a real implementation, this would call GitHub/Vercel APIs
-  // For now, we mark setup as completed in config and return a helpful message
-  if (!config.projectConfig) config.projectConfig = {};
-  if (!config.projectConfig[projectId]) config.projectConfig[projectId] = {};
-  config.projectConfig[projectId].setup = {
-    completed: true,
-    date: new Date().toISOString(),
-    note: 'Stub implementation — replace with real GitHub/Vercel API calls'
-  };
-  saveConfig(config);
+  const logs = [];
+  try {
+    const result = await orchestrator.fullSetup(paths.root, {
+      repoName: projectId,
+      isPrivate: true,
+      onLog: (line) => logs.push(line)
+    });
 
-  res.json({
-    success: true,
-    message: 'Setup automatique terminé (mode simulation). Implémentez l\'intégration réelle GitHub/Vercel côté backend.',
-    projectId
-  });
+    if (result.success) {
+      // Mettre à jour la config du projet
+      if (!config.projectConfig) config.projectConfig = {};
+      if (!config.projectConfig[projectId]) config.projectConfig[projectId] = {};
+      config.projectConfig[projectId].setup = {
+        completed: true,
+        date: new Date().toISOString(),
+        githubUrl: result.githubUrl,
+        vercelUrl: result.vercelUrl
+      };
+      config.projectConfig[projectId].github = {
+        repo: projectId,
+        url: result.githubUrl
+      };
+      config.projectConfig[projectId].vercel = {
+        url: result.vercelUrl,
+        status: 'deployed'
+      };
+      saveConfig(config);
+
+      res.json({
+        success: true,
+        message: `Setup terminé avec succès. GitHub: ${result.githubUrl} | Vercel: ${result.vercelUrl}`,
+        githubUrl: result.githubUrl,
+        vercelUrl: result.vercelUrl,
+        logs,
+        projectId
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: result.error || 'Setup failed',
+        logs,
+        projectId
+      });
+    }
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message || 'Unexpected error during setup',
+      logs,
+      projectId
+    });
+  }
 });
 
 // ─── AGENTS ────────────────────────────────────────────────────────
