@@ -974,6 +974,7 @@
           currentProjectConfig.vercel = currentProjectConfig.vercel || {};
           currentProjectConfig.vercel.url = data.vercelUrl;
           currentProjectConfig.vercel.projectUrl = data.vercelProjectUrl || null;
+          currentProjectConfig.vercel.domain = data.vercelDomain || null;
           currentProjectConfig.vercel.status = 'deployed';
           updated = true;
         }
@@ -1035,13 +1036,21 @@
             // État 1 : Déployé
             const vcLink = document.getElementById('config-vercel-url');
             if (vcLink) {
-              vcLink.href = vercel.url;
-              vcLink.textContent = vercel.url;
+              // Afficher le domaine personnalisé s'il existe, sinon l'URL de déploiement
+              const displayUrl = vercel.domain || vercel.url;
+              vcLink.href = displayUrl;
+              vcLink.textContent = displayUrl;
               vcLink.classList.remove('hidden');
             }
             if (vcSubtitle) vcSubtitle.textContent = 'Site en ligne';
             if (vcStatus) vcStatus.textContent = '✅';
-            if (vcDesc) vcDesc.textContent = 'Votre site est accessible ici.';
+            if (vcDesc) {
+              if (vercel.domain) {
+                vcDesc.textContent = 'Domaine personnalisé configuré.';
+              } else {
+                vcDesc.textContent = 'Votre site est accessible ici.';
+              }
+            }
             if (vcContent && vercel.projectUrl) {
               // Vérifier si le lien dashboard n'existe pas déjà pour éviter les doublons
               const existingDashboard = vcContent.querySelector('.vercel-dashboard-link');
