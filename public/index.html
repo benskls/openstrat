@@ -376,7 +376,7 @@
           </div>
 
           <!-- Environment Variables (only after setup) -->
-          <div id="env-card-after-setup" class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 phase-card">
+          <div id="env-card-after-setup" class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 phase-card hidden">
             <div class="flex items-center justify-between mb-4">
               <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center">
@@ -1078,7 +1078,7 @@
                 { text: '1. Installez Vercel CLI', command: 'npm install -g vercel' },
                 { text: '   ℹ️ Si une erreur de permission apparaît', note: 'Essayez avec : sudo npm install -g vercel' },
                 { text: '2. Connectez-vous à Vercel', command: 'vercel login' },
-                { text: '3. Revenez ici et cliquez "Vérifier"' }
+                { text: '3. Revenez ici et rechargez la page' }
               ];
               let instructionsHtml = '<div class="space-y-1.5 mt-2">';
               steps.forEach(step => {
@@ -1438,76 +1438,19 @@
           const badge = document.getElementById('update-badge');
           const text = document.getElementById('update-text');
           if (badge && text) {
-            text.textContent = `v${data.latest} disponible`;
+            text.textContent = `Mise à jour disponible`;
             badge.classList.remove('hidden');
           }
-          // Afficher le toast si pas encore dismiss
-          showUpdateNotification();
         }
       } catch (err) {
         // Silencieux — pas de connexion = pas de badge
       }
     }
 
-    function showUpdateNotification() {
-      if (!updateData || updateDismissed) return;
-      const toast = document.getElementById('update-toast');
-      const msg = document.getElementById('update-toast-message');
-      if (toast && msg) {
-        msg.textContent = `Une nouvelle version d'OpenStrat (${updateData.latest}) est maintenant disponible pour installation.`;
-        toast.classList.remove('hidden');
-      }
-    }
-
     function dismissUpdate() {
       updateDismissed = true;
-      const toast = document.getElementById('update-toast');
-      if (toast) toast.classList.add('hidden');
-    }
-
-    async function installUpdate() {
-      const overlay = document.getElementById('update-overlay');
-      const msg = document.getElementById('update-overlay-message');
-      const toast = document.getElementById('update-toast');
-
-      if (toast) toast.classList.add('hidden');
-      if (overlay) overlay.classList.remove('hidden');
-      if (overlay) overlay.classList.add('flex');
-
-      try {
-        if (msg) msg.textContent = 'Téléchargement et installation...';
-        const res = await fetch('/api/update', { method: 'POST' });
-        const data = await res.json();
-
-        if (data.success) {
-          if (msg) msg.textContent = 'Installation terminée. Redémarrage du serveur...';
-          // Attendre que le serveur revienne
-          await waitForServerRestart();
-          window.location.reload();
-        } else {
-          throw new Error(data.error || 'Échec de la mise à jour');
-        }
-      } catch (err) {
-        if (msg) msg.textContent = 'Erreur : ' + err.message;
-        if (msg) msg.className = 'text-xs text-red-400 mb-1';
-        setTimeout(() => {
-          if (overlay) overlay.classList.add('hidden');
-          if (overlay) overlay.classList.remove('flex');
-        }, 3000);
-      }
-    }
-
-    async function waitForServerRestart(maxAttempts = 30) {
-      for (let i = 0; i < maxAttempts; i++) {
-        await new Promise(r => setTimeout(r, 2000));
-        try {
-          const res = await fetch('/api/version', { method: 'GET' });
-          if (res.ok) return true;
-        } catch (e) {
-          // Serveur pas encore prêt, on continue
-        }
-      }
-      return false;
+      const badge = document.getElementById('update-badge');
+      if (badge) badge.classList.add('hidden');
     }
 
     // Vérifier les mises à jour toutes les 5 minutes
@@ -1536,38 +1479,5 @@
     </div>
   </div>
 
-  <!-- Update Notification Toast -->
-  <div id="update-toast" class="fixed bottom-6 right-6 z-50 hidden max-w-sm w-full">
-    <div class="bg-zinc-900 border border-amber-500/30 rounded-xl shadow-2xl p-4 fade-in">
-      <div class="flex items-start gap-3">
-        <div class="shrink-0 w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center mt-0.5">
-          <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-        </div>
-        <div class="flex-1 min-w-0">
-          <h4 class="text-sm font-semibold text-white mb-1">Mise à jour disponible</h4>
-          <p id="update-toast-message" class="text-xs text-zinc-400 mb-3">Une nouvelle version d'OpenStrat est disponible pour installation.</p>
-          <div class="flex items-center gap-2">
-            <button onclick="installUpdate()" class="px-3 py-1.5 text-xs bg-amber-600 hover:bg-amber-500 text-white rounded font-medium transition">Installer et redémarrer</button>
-            <button onclick="dismissUpdate()" class="px-3 py-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-400 rounded border border-zinc-700 transition">Pas encore</button>
-          </div>
-        </div>
-        <button onclick="dismissUpdate()" class="shrink-0 text-zinc-500 hover:text-white transition">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Update Overlay -->
-  <div id="update-overlay" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/70 backdrop-blur-sm">
-    <div class="bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl p-8 max-w-sm w-full mx-4 text-center fade-in">
-      <div class="w-12 h-12 rounded-full bg-indigo-500/10 flex items-center justify-center mx-auto mb-4">
-        <div class="spinner w-6 h-6"></div>
-      </div>
-      <h3 class="text-lg font-semibold text-white mb-2">Mise à jour en cours</h3>
-      <p id="update-overlay-message" class="text-xs text-zinc-400 mb-1">Installation de la dernière version...</p>
-      <p class="text-[10px] text-zinc-600">Ne fermez pas cette fenêtre</p>
-    </div>
-  </div>
 </body>
 </html>
