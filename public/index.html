@@ -352,8 +352,8 @@
                   <p class="text-xs text-zinc-500">Repository du projet</p>
                 </div>
               </div>
-              <a id="config-github-url" href="#" target="_blank" class="block text-sm text-indigo-400 hover:text-indigo-300 underline mb-2 break-all">https://github.com/...</a>
-              <p class="text-xs text-zinc-500">Votre code est sauvegardé ici.</p>
+              <a id="config-github-url" href="#" target="_blank" class="block text-sm text-indigo-400 hover:text-indigo-300 underline mb-2 break-all">Chargement...</a>
+              <p id="github-card-desc" class="text-xs text-zinc-500">Votre code est sauvegardé ici.</p>
             </div>
 
             <!-- Vercel Result -->
@@ -948,14 +948,17 @@
 
         let updated = false;
 
-        // Si un repo GitHub existe et qu'on ne l'a pas en config
+        // Si un repo GitHub existe → stocker l'URL
         if (data.githubExists && data.githubUrl) {
-          if (!currentProjectConfig.github || !currentProjectConfig.github.url) {
-            currentProjectConfig.github = currentProjectConfig.github || {};
-            currentProjectConfig.github.repo = currentProject;
-            currentProjectConfig.github.url = data.githubUrl;
-            updated = true;
-          }
+          currentProjectConfig.github = currentProjectConfig.github || {};
+          currentProjectConfig.github.repo = currentProject;
+          currentProjectConfig.github.url = data.githubUrl;
+          updated = true;
+        } else if (currentProjectConfig.github && currentProjectConfig.github.url && !data.githubExists) {
+          // Le repo n'existe plus (supprimé ?) → nettoyer l'URL obsolète
+          delete currentProjectConfig.github.url;
+          delete currentProjectConfig.github.repo;
+          updated = true;
         }
 
         // Stocker le statut Vercel (même si pas installé, pour afficher le bon état)
@@ -1007,7 +1010,10 @@
       const github = config.github || {};
       const vercel = config.vercel || {};
       const env = config.env || {};
-      const setupOk = !!(config.setup && config.setup.completed);
+      const hasGithub = !!(github.url);
+      const hasVercel = !!(vercel.url);
+      // Le setup est OK seulement s'il est marqué complété ET qu'on a au moins un service configuré
+      const setupOk = !!(config.setup && config.setup.completed) && (hasGithub || hasVercel);
 
       const wizard = document.getElementById('config-wizard');
       const results = document.getElementById('config-results');
@@ -1023,9 +1029,29 @@
         if (results) results.classList.remove('hidden');
 
         const ghLink = document.getElementById('config-github-url');
+        const ghDesc = document.getElementById('github-card-desc');
         if (ghLink && github.url) {
           ghLink.href = github.url;
           ghLink.textContent = github.url;
+          ghLink.className = 'block text-sm text-indigo-400 hover:text-indigo-300 underline mb-2 break-all';
+          if (ghDesc) {
+            ghDesc.textContent = 'Votre code est sauvegardé ici.';
+            ghDesc.className = 'text-xs text-zinc-500';
+          }
+        } else if (ghLink) {
+          // Aucun repo détecté
+          ghLink.textContent = 'Aucun repository GitHub';
+          ghLink.href = '#';
+          ghLink.className = 'block text-sm text-zinc-500 mb-2';
+          ghLink.onclick = (e) => {
+            e.preventDefault();
+            if (wizard) wizard.classList.remove('hidden');
+            if (results) results.classList.add('hidden');
+          };
+          if (ghDesc) {
+            ghDesc.innerHTML = '<span class="text-amber-400">⚠️</span> Repository non créé. <span class="text-indigo-400 hover:text-indigo-300 underline cursor-pointer" onclick="document.getElementById(\'config-wizard\').classList.remove(\'hidden\'); document.getElementById(\'config-results\').classList.add(\'hidden\');">Configurer →</span>';
+            ghDesc.className = 'text-xs text-zinc-400';
+          }
         }
 
         // Card Vercel : toujours visible si setup terminé
