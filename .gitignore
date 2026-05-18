@@ -4,3 +4,10 @@ npm-debug.log
 *.log
 config.json
 opencode.json
+
+# Fichiers de travail générés par OpenStrat (templates) — ne pas committer
+.opencode/agents/*.md
+.opencode/skills/*/
+docs/PICTURE.md
+progress.md
+roadmap.md
