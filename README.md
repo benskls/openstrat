@@ -46,6 +46,7 @@ Le script va :
 | **Empty states avec CTA** | Interface guidée quand un projet est vide |
 | **Compteurs temps réel** | Nombre d'agents, skills et fichiers détectés |
 | **Refresh du dossier racine** | Rescan à la volée pour détecter les nouveaux projets |
+| **Config** | Vérification et setup automatique GitHub + Vercel avec détection des CLI |
 
 ## 🛠 Utilisation
 
@@ -77,6 +78,16 @@ npm start
    - **Picture** → "Créer la Picture"
    - **Progress** → "Créer le Progress"
    - **Roadmap** → "Créer la Roadmap"
+
+### Configurer le déploiement (GitHub + Vercel)
+
+L'onglet **Config** du dashboard guide le déploiement de votre side project en 3 étapes :
+
+1. **Vérification des prérequis** : le dashboard détecte automatiquement si `git`, `gh` (GitHub CLI) et `vercel` (Vercel CLI) sont installés et authentifiés sur votre machine.
+2. **Setup automatique** : un clic sur **"Lancer le setup"** crée un repository GitHub privé, pousse votre code, et déploie sur Vercel.
+3. **Résultats** : une fois terminé, vous obtenez deux liens — votre repo GitHub et votre site en ligne sur Vercel.
+
+> **Astuce** : si un outil est manquant, le dashboard affiche la commande exacte à copier-coller (`brew install gh`, `vercel login`, etc.).
 
 ### 🚀 Première session avec votre agent
 
