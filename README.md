@@ -165,6 +165,7 @@ Les skills **session-start** et **session-end** sont générés automatiquement 
 openstrat                    # Lancer le dashboard
 lsof -ti:3456 | xargs kill   # Arrêter le serveur
 cat /tmp/openstrat.log       # Voir les logs
+bash update-openstrat.sh     # Mettre à jour OpenStrat (préserve vos projets)
 ```
 
 ## 🏗 Architecture agents/skills
