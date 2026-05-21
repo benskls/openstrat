@@ -1396,6 +1396,18 @@
           html += `</div>`;
         }
 
+        // Git identity
+        if (data.gitIdentity && data.gitIdentity.configured) {
+          html += `<div class="flex items-center gap-2 text-xs text-green-400 mb-2"><span>✅</span> <span>Identité Git configurée (${data.gitIdentity.name})</span></div>`;
+        } else if (data.git && data.git.installed) {
+          allReady = false;
+          html += `<div class="bg-zinc-950 border border-zinc-800 rounded-lg p-3 mb-2">`;
+          html += `<div class="flex items-center gap-2 text-xs text-amber-400 mb-2"><span>⚠️</span> <span class="font-medium">Identité Git non configurée</span></div>`;
+          html += `<div class="text-xs text-zinc-300 mb-2">Git a besoin d'un nom et d'un email pour créer des commits. Vous pouvez les configurer automatiquement avec votre compte GitHub.</div>`;
+          html += `<button onclick="configureGitIdentity()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded transition">Configurer avec GitHub</button>`;
+          html += `</div>`;
+        }
+
         // Mettre à jour le stepper visuel
         const stepGit = document.getElementById('step-git');
         const stepGh = document.getElementById('step-gh');
@@ -1441,6 +1453,23 @@
       } catch (err) {
         statusDiv.innerHTML = `<div class="text-xs text-red-400">Erreur de vérification : ${escapeHtml(err.message)}</div>`;
       }
+    }
+
+    async function configureGitIdentity() {
+      const statusDiv = document.getElementById('setup-cli-status');
+      statusDiv.innerHTML = '<div class="flex items-center gap-2 text-xs text-zinc-400"><div class="spinner"></div> Configuration de l\'identité Git...</div>';
+      try {
+        const res = await fetch('/api/setup/git-identity', { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok || data.error) {
+          throw new Error(data.error || 'Échec de la configuration');
+        }
+        showToast(`Identité Git configurée : ${data.name} <${data.email}>`);
+      } catch (err) {
+        showToast('Erreur : ' + err.message);
+      }
+      // Rafraîchir les prérequis
+      await checkSetupPrerequisites();
     }
 
     async function runAutoSetup() {
