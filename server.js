@@ -452,6 +452,7 @@ app.get('/api/setup/status', async (req, res) => {
     const gh = await github.checkStatus();
     const vc = await vercel.checkStatus();
     const gitInstalled = await setupUtils.checkCommand('git');
+    const gitIdentity = gitInstalled ? await setupUtils.checkGitIdentity() : { configured: false, name: null, email: null };
     res.json({
       github: {
         installed: gh.installed,
@@ -469,8 +470,25 @@ app.get('/api/setup/status', async (req, res) => {
         installed: gitInstalled,
         instructions: gitInstalled ? null : await setupUtils.getInstallInstructions('git')
       },
-      ready: gh.installed && gh.authenticated && vc.installed && vc.authenticated && gitInstalled
+      gitIdentity,
+      ready: gh.installed && gh.authenticated && vc.installed && vc.authenticated && gitInstalled && gitIdentity.configured
     });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/setup/git-identity
+ * Configure l'identité Git globale à partir du compte GitHub connecté.
+ */
+app.post('/api/setup/git-identity', async (req, res) => {
+  try {
+    const result = await setupUtils.configureGitIdentityFromGitHub();
+    if (!result.success) {
+      return res.status(400).json({ error: result.error || 'Impossible de configurer l\'identité Git.' });
+    }
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
